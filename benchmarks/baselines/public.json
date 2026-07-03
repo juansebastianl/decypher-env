@@ -1,0 +1,73 @@
+{
+  "num_instances": 3,
+  "pass_at_k": {
+    "pass@1": 0.1333333333333333,
+    "pass@2": 0.26666666666666666,
+    "pass@3": 0.39999999999999997,
+    "pass@4": 0.5333333333333333,
+    "pass@5": 0.6666666666666666
+  },
+  "solvers": [
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 3,
+      "reward_max": 1.9206527342446698,
+      "reward_mean": 1.9152853217518162,
+      "reward_median": 1.9179327796486618,
+      "reward_min": 1.9072704513621168,
+      "solver": "baseline",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 3,
+      "reward_max": 1.9921541470322968,
+      "reward_mean": 1.9914981622639552,
+      "reward_median": 1.9911701698797846,
+      "reward_min": 1.9911701698797846,
+      "solver": "random_metropolis",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.6666666666666666,
+      "instances": 3,
+      "reward_max": 3.3329169269748604,
+      "reward_mean": 2.6653982280754316,
+      "reward_median": 2.6656753409510765,
+      "reward_min": 1.9976024163003583,
+      "solver": "continuous_relaxed",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 3,
+      "reward_max": 1.9985922679259367,
+      "reward_mean": 1.9985922679259367,
+      "reward_median": 1.9985922679259367,
+      "reward_min": 1.9985922679259367,
+      "solver": "algebraic_relaxed",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 3,
+      "reward_max": 1.9935528845195274,
+      "reward_mean": 1.992240425809286,
+      "reward_median": 1.9925674420252866,
+      "reward_min": 1.990600950883044,
+      "solver": "parallel_tempering",
+      "timeout_rate": 0.0
+    }
+  ],
+  "suite": "public"
+}

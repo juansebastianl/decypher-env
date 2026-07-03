@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The AES-XTS Decoder, Explained</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232d;
+    --ink: #e6edf3;
+    --muted: #9da7b3;
+    --accent: #6cb6ff;
+    --accent-2: #f0a868;
+    --green: #7ee787;
+    --red: #ff7b72;
+    --purple: #d2a8ff;
+    --border: #2a313c;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    font-size: 17px;
+  }
+  .layout { display: grid; grid-template-columns: 290px 1fr; max-width: 1400px; margin: 0 auto; }
+  nav {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 28px 20px; border-right: 1px solid var(--border); background: var(--panel);
+    font-size: 14px;
+  }
+  nav h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 22px 0 8px; }
+  nav a { display: block; color: var(--muted); text-decoration: none; padding: 3px 0; border-left: 2px solid transparent; padding-left: 10px; }
+  nav a:hover { color: var(--accent); border-left-color: var(--accent); }
+  nav .brand { font-weight: 700; font-size: 16px; color: var(--ink); margin-bottom: 4px; }
+  main { padding: 48px 56px 120px; min-width: 0; }
+  h1 { font-size: 40px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h2 { font-size: 28px; margin: 56px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+  h3 { font-size: 21px; margin: 34px 0 10px; color: var(--accent); }
+  h4 { font-size: 17px; margin: 22px 0 6px; color: var(--accent-2); }
+  p, li { color: #d6dee7; }
+  a { color: var(--accent); }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--panel-2); padding: 1px 6px; border-radius: 5px; color: var(--purple); }
+  pre {
+    background: #0a0d12; border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px;
+    overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; color: #c9d4e0;
+  }
+  pre .c { color: #6e7781; font-style: italic; }
+  pre .k { color: var(--red); }
+  pre .s { color: var(--green); }
+  pre .n { color: var(--accent-2); }
+  pre .f { color: var(--accent); }
+  .lede { font-size: 20px; color: var(--muted); max-width: 70ch; }
+  .callout { border-left: 3px solid var(--accent); background: var(--panel); padding: 12px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; }
+  .callout.warn { border-left-color: var(--accent-2); }
+  .callout.note { border-left-color: var(--purple); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 20px 0; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .card h4 { margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 20px 0; font-size: 15px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--panel-2); color: var(--ink); font-weight: 600; }
+  td code { white-space: nowrap; }
+  .pill { display: inline-block; font-family: var(--mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .pill.ascii { color: var(--green); border-color: #2c5; }
+  .pill.cons { color: var(--accent); border-color: #36c; }
+  .pill.goal { color: var(--accent-2); border-color: #c83; }
+  .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .eqn { overflow-x: auto; padding: 6px 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .footer { color: var(--muted); font-size: 14px; margin-top: 80px; border-top: 1px solid var(--border); padding-top: 20px; }
+  .filemap { font-family: var(--mono); font-size: 13px; }
+  .filemap .dir { color: var(--accent); }
+  .filemap .file { color: var(--ink); }
+  .filemap .desc { color: var(--muted); }
+  .kbd { font-family: var(--mono); font-size: 12px; background:#0a0d12; border:1px solid var(--border); border-radius:5px; padding:1px 6px; }
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+    nav { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 28px 22px 80px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="brand">AES-XTS Decoder</div>
+  <div class="tag">a mathematical walkthrough</div>
+
+  <h2>Foundations</h2>
+  <a href="#overview">1. What this repo does</a>
+  <a href="#xts">2. AES-XTS recap</a>
+  <a href="#inverse">3. The inverse problem</a>
+
+  <h2>The model</h2>
+  <a href="#circuit">4. The circuit IR</a>
+  <a href="#encodings">5. Opaque vs lowered</a>
+  <a href="#constraints">6. Constraints &amp; classes</a>
+  <a href="#residuals">7. Residuals</a>
+
+  <h2>The optimizer</h2>
+  <a href="#energy">8. Lagrangian energy</a>
+  <a href="#pt">9. Parallel tempering</a>
+  <a href="#moves">10. Moves &amp; updates</a>
+  <a href="#delta">11. Incremental scoring</a>
+  <a href="#dual">12. Dual / multiplier updates</a>
+  <a href="#ladder">13. Ladder adaptation</a>
+
+  <h2>The continuous-relaxed engine</h2>
+  <a href="#relaxed-energy">14. Smooth residuals &amp; energy</a>
+  <a href="#relaxed-keys">15. Profile-guided key moves</a>
+  <a href="#relaxed-moves">16. Gradient-biased proposals</a>
+  <a href="#relaxed-dual">17. Adam dual &amp; annealing</a>
+
+  <h2>Instrumentation</h2>
+  <a href="#diagnostics">18. Diagnostics</a>
+  <a href="#harvest">19. Harvesting solutions</a>
+  <a href="#pipeline">20. End-to-end pipeline</a>
+  <a href="#glossary">21. Symbol glossary</a>
+</nav>
+
+<main>
+  <h1>The AES-XTS Decoder</h1>
+  <p class="lede">A from-scratch tour of how this repository tries to recover plaintext from AES-XTS ciphertext by turning decryption into a constrained optimization problem and attacking it with replica-exchange (parallel tempering) Monte Carlo under an augmented-Lagrangian energy.</p>
+
+  <div class="callout warn">
+    <strong>Honest framing.</strong> This is a research / experimental sampler. AES-256 is not broken; with full 14 rounds and unknown keys the search space is astronomically large and the engine will essentially never converge. The value of the codebase is the <em>machinery</em>: a circuit IR for AES-XTS, a per-byte "lowered" relaxation, and a heavily instrumented parallel-tempering engine with method-of-multipliers constraint handling, feedback-optimized temperature ladders, and MCMC convergence diagnostics. This page explains that machinery in detail.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="overview">1. What this repository actually does</h2>
+
+  <p>Given a block of AES-XTS <strong>ciphertext</strong> (and the public sector/block indices), the decoder searches for an assignment of the unknown variables</p>
+  <div class="eqn">\[ x \;=\; \big(\,\underbrace{P}_{\text{plaintext bytes}},\; \underbrace{K_1}_{\text{data key}},\; \underbrace{K_2}_{\text{tweak key}},\; \underbrace{W}_{\text{internal AES wires}}\,\big) \]</div>
+  <p>such that two things hold simultaneously:</p>
+  <ol>
+    <li><strong>Cryptographic consistency</strong> — encrypting \(P\) under \((K_1,K_2)\) reproduces the observed ciphertext exactly; and (in the lowered model) every intermediate AES byte is internally consistent.</li>
+    <li><strong>A language prior</strong> — every plaintext byte is <em>text ASCII</em> (printable, or tab/newline/CR). Without this prior the problem is hopeless: for any key there exists <em>some</em> plaintext, so the ASCII constraint is what makes a recovered message meaningful and the search well-posed.</li>
+  </ol>
+
+  <p>The whole thing is framed as energy minimization / Boltzmann sampling: define an energy \(E(x)\) that is zero exactly when \(x\) is a valid, ASCII, ciphertext-matching assignment, and use a stochastic sampler to find the low-energy (ideally zero-energy) states. Each zero-energy state is a candidate decryption that is "harvested."</p>
+
+  <div class="callout">
+    <strong>Three implementations live side by side.</strong> A pure-Python reference engine (<code>backends/python.py</code>) defines the ground-truth semantics; a high-performance C++/OpenMP parallel-tempering engine (<code>backends/native/solvers/parallel_tempering.cpp</code>) does the real work; and a sibling <em>continuous-relaxed</em> engine (<code>backends/native/solvers/continuous_relaxed.cpp</code>, selected as <code>native-continuous-relaxed</code> / <code>NativeContinuousRelaxedEngine</code>) swaps the discrete residuals for a smooth relaxation and adds exact one-round Gibbs moves, approximate multi-round profile moves, and schedule-aware key proposals. All three are exposed to Python through a Cython bridge (<code>_bridge.pyx</code>). The Python path is the correctness oracle; the native paths are the optimizers. <a href="#relaxed-energy">§14–§17</a> dissect the continuous-relaxed engine, which is the focus of the most recent work.
+  </div>
+
+  <h3>Repository map</h3>
+  <div class="filemap card">
+<span class="dir">src/decoder/</span><br>
+&nbsp;&nbsp;<span class="file">aes_primitives.py</span> &nbsp;<span class="desc"># reference AES-256 + XTS (S-box, key schedule, GF mul, tweak)</span><br>
+&nbsp;&nbsp;<span class="file">ascii_constraints.py</span> <span class="desc"># the text-ASCII domain</span><br>
+&nbsp;&nbsp;<span class="file">circuit.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># the value/op/constraint IR + evaluator</span><br>
+&nbsp;&nbsp;<span class="file">xts_model.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># builds the circuit for a window of XTS blocks</span><br>
+&nbsp;&nbsp;<span class="file">sampler.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># high-level XtsSampler orchestration</span><br>
+&nbsp;&nbsp;<span class="file">sample_blocks.py</span> &nbsp;&nbsp;&nbsp;<span class="desc"># native-PT CLI: the epoch loop</span><br>
+&nbsp;&nbsp;<span class="dir">encodings/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># opaque vs lowered AES circuit emitters</span><br>
+&nbsp;&nbsp;<span class="dir">relaxations/</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># discrete (Hamming) and continuous (distribution) residuals</span><br>
+&nbsp;&nbsp;<span class="dir">backends/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">python.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># reference single-chain Metropolis engine</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">native/</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="desc"># Cython bridge + C++ engines + baseline scorer</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dir">solvers/</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">parallel_tempering.cpp</span> <span class="desc"># discrete-Hamming PT engine (§8–§13)</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">continuous_relaxed.cpp</span> &nbsp;<span class="desc"># smooth-residual + key-Gibbs engine (§14–§17)</span>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="xts">2. AES-XTS in one screen</h2>
+
+  <p>XTS (XEX-based tweaked codebook with ciphertext stealing) is the disk-encryption mode. It uses <strong>two</strong> independent AES-256 keys: \(K_1\) encrypts data, \(K_2\) derives a per-block <em>tweak</em>. For the block at sector number \(s\) and block index \(j\) within that sector, encryption is:</p>
+
+  <div class="eqn">\[
+  T_0 \;=\; \mathrm{AES}_{K_2}\!\big(\,\mathrm{LE}_{128}(s)\,\big), \qquad
+  T_j \;=\; T_0 \otimes \alpha^{\,j} \ \ \text{in } \mathrm{GF}(2^{128})
+  \]</div>
+  <div class="eqn">\[
+  C \;=\; \mathrm{AES}_{K_1}\!\big(P \oplus T_j\big)\;\oplus\; T_j
+  \]</div>
+
+  <p>Here \(\mathrm{LE}_{128}(s)\) is the sector number as a little-endian 128-bit block (see <code>sector_tweak_input</code>), \(\alpha\) is the primitive element \(x\), and \(\otimes\alpha\) is the "multiply by x" operation in \(\mathrm{GF}(2^{128})\) with reduction polynomial \(x^{128}+x^7+x^2+x+1\) (the magic constant <code>0x87</code>):</p>
+
+  <pre><span class="f">XtsMulX</span>(tweak):                  <span class="c">// parallel_tempering.cpp</span>
+    carry = 0
+    <span class="k">for</span> i in 0..15:
+        next_carry = (tweak[i] &amp; 0x80) ? 1 : 0
+        out[i] = (tweak[i] &lt;&lt; 1) | carry
+        carry  = next_carry
+    <span class="k">if</span> carry: out[0] ^= 0x87        <span class="c">// reduction</span>
+    <span class="k">return</span> out</pre>
+
+  <p>The data path is AES-256 itself: an initial <code>AddRoundKey</code>, then \(R-1\) full rounds of <code>SubBytes → ShiftRows → MixColumns → AddRoundKey</code>, then a final round without <code>MixColumns</code>. The repo carries a full, dependency-free reference of all of this (S-box, key schedule with <code>RotWord</code>/<code>SubWord</code>/<code>Rcon</code>, \(\mathrm{GF}(2^8)\) <code>MixColumns</code>) in both Python (<code>aes_primitives.py</code>) and C++.</p>
+
+  <div class="callout note">
+    <strong>Reduced rounds for positive controls.</strong> The config carries <code>aes_rounds</code> (1–14). At fewer rounds the cipher is weaker, so the engine can actually solve it — useful as a positive control. Because the fixture ciphertext is produced with full 14 rounds, <code>block_specs_for_model</code> recomputes the correct reduced-round target ciphertext from the known plaintext/key so the reduced model is validated against a matching target.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="inverse">3. Why this is hard: the inverse problem</h2>
+
+  <p>Forward encryption is cheap. The decoder is solving the <em>inverse</em>: it knows \(C\), the sector \(s\), and the block index \(j\), and wants \(P\) (and implicitly the keys). If the keys were known, decryption would be a one-liner — and in fact the engine exploits exactly that with its <a href="#moves">repair move</a>. The difficulty is that \(K_1,K_2\) are 256 bits each, so the joint key space is \(2^{512}\), and AES's confusion/diffusion mean the residual landscape is extremely rugged: tiny changes to a key byte scramble every output byte.</p>
+
+  <p>The strategy is to convert "find a satisfying assignment" into "minimize a non-negative energy whose global minima are the satisfying assignments," then throw a good sampler at it. The ASCII prior shrinks the effective target set, and parallel tempering plus the constraint-repair move are the tools for crossing the rugged landscape.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="circuit">4. The circuit intermediate representation</h2>
+
+  <p>Everything is compiled into a compact, array-friendly IR in <code>circuit.py</code>. Three record types matter:</p>
+
+  <div class="grid">
+    <div class="card">
+      <h4>Values</h4>
+      <p>Integer-ID'd quantities, each with a bit <code>width</code>. Inputs (plaintext/key bytes), constants (the target ciphertext), and internal "wires" are all values.</p>
+    </div>
+    <div class="card">
+      <h4>Ops</h4>
+      <p>A small instruction set that <em>computes</em> a value from inputs: <code>INPUT, CONST, XOR8/128, SBOX8, MIX_COLUMN_BYTE, AES256_ROUND_KEY_BYTE, XTS_MUL_X_BYTE, EXTRACT_BYTE, AES_XTS_BLOCK</code>.</p>
+    </div>
+    <div class="card">
+      <h4>Constraints</h4>
+      <p>Predicates that <em>should</em> hold: <code>EQ8, EQ128, ASCII_PRINTABLE, DEFINE8</code>. These produce the residuals the optimizer minimizes.</p>
+    </div>
+  </div>
+
+  <p>An <code>Assignment</code> holds the mutable search state as flat byte buffers: <code>plaintext</code>, <code>key1</code>, <code>key2</code>, and optional <code>wires</code> (the lowered internal values). The native engine mirrors this as <code>AssignmentState</code>.</p>
+
+  <p>The IR is deliberately flat so it serializes cleanly to the C++ side. <code>op_table()</code> / <code>constraint_table()</code> emit fixed-width integer rows; the Cython bridge then flattens ops into parallel arrays (<code>opcodes</code>, <code>outputs</code>, <code>input_offsets</code>, <code>inputs</code>, <code>immediates</code>, …) plus the constant pool and per-value bit widths. The C++ constructor rebuilds three crucial adjacency structures from those arrays:</p>
+
+  <ul>
+    <li><code>ops_by_input_[v]</code> — which ops consume value <code>v</code> (forward dataflow graph, used for delta evaluation).</li>
+    <li><code>constraints_by_value_[v]</code> — which constraints are affected by <code>v</code> (including one hop through producer inputs).</li>
+    <li><code>definitions_by_right_[v]</code> — the <code>DEFINE8</code> wire definitions whose right-hand side is <code>v</code> (used to propagate derived wire values).</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="encodings">5. Two encodings: opaque vs lowered</h2>
+
+  <p>The same XTS block can be modeled at two granularities. This choice is the single biggest structural decision in the system.</p>
+
+  <h3>5.1 Opaque encoding</h3>
+  <p>One monolithic op, <code>AES_XTS_BLOCK</code>, computes the predicted ciphertext for a block by calling the reference cipher directly. The only constraints are:</p>
+  <ul>
+    <li><span class="pill goal">GOAL</span> <code>EQ128</code>: predicted ciphertext \(=\) target ciphertext (128 bits at once).</li>
+    <li><span class="pill ascii">ASCII</span> per plaintext byte.</li>
+  </ul>
+  <p>There are <strong>no internal wires</strong>. This is compact, but the energy landscape is a black box: the only moves are on plaintext/key bytes, and a single key bit flip changes all 16 ciphertext bytes unpredictably. Good for scoring, bad for local search.</p>
+
+  <h3>5.2 Lowered encoding</h3>
+  <p>Here <em>every</em> AES micro-step becomes its own op writing an internal wire value, and each wire carries a <code>DEFINE8</code> "consistency" constraint asserting <code>wire == recomputed value</code>. <code>LoweredAesEncoding.encrypt_block</code> emits, per round: <code>SBOX8</code> per byte, <code>ShiftRows</code> as pure wire re-routing (<code>DEFINE8</code> copies), <code>MIX_COLUMN_BYTE</code> per output byte (a GF(2⁸) linear combination with the MixColumns coefficient row), and <code>XOR8</code> AddRoundKey. The key schedule itself is exposed via <code>AES256_ROUND_KEY_BYTE</code> ops, also pinned to wires. The XTS tweak chain is built with <code>XTS_MUL_X_BYTE</code> ops, the pre-whitening and post-whitening are <code>XOR8</code> wires, and each ciphertext byte gets an <span class="pill goal">EQ8</span> constraint against the target.</p>
+
+  <p>The payoff: the search now has thousands of <em>local</em> degrees of freedom (the wires) and the optimizer can flip one wire bit, re-score only the handful of constraints it touches, and walk the landscape incrementally. The cost: many more variables and constraints, and the burden of keeping all those wires mutually consistent — which is exactly what the <span class="pill cons">CONSISTENCY</span> class measures.</p>
+
+  <div class="callout">
+    The lowered builder also calls <code>register_xts_block(...)</code>, recording each block's sector number, block index, plaintext offset, and target ciphertext. This metadata is what enables the native engine's exact <a href="#moves">constraint-repair move</a>.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="constraints">6. Constraints and their three classes</h2>
+
+  <p>Every constraint is tagged with a <em>class</em> (<code>classify_constraints</code>), and the class controls its initial weight, its penalty coefficient, and how its multiplier is updated. There are exactly three:</p>
+
+  <table>
+    <thead><tr><th>Class</th><th>Constraint kinds</th><th>Meaning</th><th>Initial multiplier \(\lambda_i^{(0)}\)</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill ascii">ASCII (1)</span></td><td><code>ASCII_PRINTABLE</code></td><td>plaintext byte is text ASCII</td><td><code>ascii_weight</code></td></tr>
+      <tr><td><span class="pill cons">CONSISTENCY (2)</span></td><td><code>DEFINE8</code></td><td>an internal wire equals the op that defines it</td><td><code>consistency_weight / 8</code></td></tr>
+      <tr><td><span class="pill goal">GOAL (3)</span></td><td><code>EQ8</code>, <code>EQ128</code></td><td>predicted ciphertext equals target</td><td><code>goal_weight / 8</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The division by 8 reflects that consistency/goal residuals are measured in <em>bits</em> (up to 8 per byte), whereas ASCII is a single 0/1 indicator, so the per-bit weighting is normalized to a comparable per-byte scale.</p>
+
+  <p>The class split is what allows the optimizer to treat the problem as a true constrained program: the <span class="pill goal">GOAL</span> term is the thing we want to drive to zero, while <span class="pill ascii">ASCII</span> and <span class="pill cons">CONSISTENCY</span> are constraints whose multipliers are adapted (see <a href="#dual">§12</a>). A common schedule is to start <code>goal_weight</code> small (a "goal ramp," default <code>0.1</code>) and let the dual updates grow the constraint pressure.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="residuals">7. Residuals: how violation is measured</h2>
+
+  <p>A <em>residual</em> \(r_i(x) \ge 0\) measures how badly constraint \(i\) is violated; \(r_i = 0\) means satisfied. The native scorer (<code>ResidualForConstraint</code>) defines:</p>
+
+  <div class="eqn">\[
+  r_i =
+  \begin{cases}
+  [\,b \notin \text{TextASCII}\,] & \text{ASCII (a single 0/1 indicator)} \\[1ex]
+  \operatorname{popcount}(a \oplus b) & \text{EQ8 / DEFINE8 (bit-level Hamming distance)} \\[1ex]
+  \displaystyle\sum_{k=0}^{15}\operatorname{popcount}(a_k \oplus b_k) & \text{EQ128 (Hamming over 16 bytes)}
+  \end{cases}
+  \]</div>
+
+  <p>Using <strong>Hamming distance in bits</strong> rather than a 0/1 equality is essential: it makes equality constraints <em>smooth</em> in the sense that getting "closer" to the target (fewer wrong bits) lowers the residual, giving the sampler a usable gradient signal even when the byte is not yet exactly right. The text-ASCII test accepts <code>0x09, 0x0A, 0x0D</code> and the printable range <code>0x20–0x7E</code>.</p>
+
+  <p>The aggregate score for an assignment is</p>
+  <div class="eqn">\[ H(x) \;=\; \sum_i r_i(x), \qquad \text{violations} = \#\{ i : r_i(x) > 0\}. \]</div>
+  <p>An assignment is <strong>feasible</strong> iff \(H(x) = 0\). Note \(H\) is the raw, unweighted Hamming score used for feasibility tests and diagnostics; the optimizer instead minimizes the weighted <em>energy</em> below.</p>
+
+  <h3>The relaxations module</h3>
+  <p>The Python side abstracts residual computation behind a <code>Relaxation</code> protocol. <code>DiscreteLocalRelaxation</code> is the default and matches the native scorer exactly (integer bit counts). <code>ByteDistributionRelaxation</code> is an experimental <em>continuous</em> relaxation that lifts each byte to a probability vector over its 256 possible values, pushes distributions through the S-box (\(\mathbb{E}[\,\mathrm{SBOX}\,]\) as a permutation pushforward), and exposes gradients of equality factors in distribution space — scaffolding for a future differentiable/Langevin engine rather than something the PT engine uses today.</p>
+
+  <p>The native <a href="#relaxed-energy">continuous-relaxed engine</a> takes a lighter-weight route to a smooth landscape: rather than full 256-way distributions it keeps each residual a single scalar but makes it <em>graded</em> — normalizing every Hamming distance to \([0,1]\) and, crucially, replacing the flat 0/1 ASCII test with a graded bit-distance to the nearest printable byte. That graded surrogate is the relaxation the production engine actually optimizes; it is developed in <a href="#relaxed-energy">§14</a>.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="energy">8. The augmented-Lagrangian energy</h2>
+
+  <p>This is the mathematical heart of the optimizer. The engine does not minimize the raw Hamming score; it minimizes an <strong>augmented Lagrangian</strong> (a method-of-multipliers objective) over the residuals (<code>Energy</code> in the C++):</p>
+
+  <div class="eqn">\[
+  \boxed{\;E(x) \;=\; \sum_i \Big[\, \lambda_i\, r_i(x) \;+\; \tfrac{1}{2}\,\rho_i\, r_i(x)^2 \,\Big]\;}
+  \]</div>
+
+  <p>Each constraint contributes two terms:</p>
+  <ul>
+    <li>a <strong>linear multiplier term</strong> \(\lambda_i r_i\) — the Lagrange multiplier estimate, adapted over time (the <code>multipliers_</code> array);</li>
+    <li>a <strong>quadratic penalty term</strong> \(\tfrac12\rho_i r_i^2\) — with penalty coefficient \(\rho_i\) (the <code>penalties_</code> array, set to <code>mu</code> in fixed mode or to a per-class \(\rho\) in scheduled mode).</li>
+  </ul>
+
+  <p>This is precisely the classic augmented Lagrangian for the equality-constrained program "minimize 0 subject to \(r_i(x)=0\ \forall i\)." Why both terms? The pure quadratic penalty method needs \(\rho\to\infty\) to enforce constraints exactly (ill-conditioned), while the multiplier term lets the constraints be satisfied with <em>finite</em> penalty by driving \(\lambda_i\) toward the true Lagrange multipliers. The combination is well-conditioned and is the standard method of multipliers (Hestenes–Powell).</p>
+
+  <div class="callout note">
+    Because every \(r_i\ge 0\) and the global target is \(r_i=0\), the energy is non-negative and \(E(x)=0 \iff H(x)=0 \iff x\) is feasible. So minimizing \(E\) and hunting for feasible assignments are the same objective, just reweighted to shape the landscape.
+  </div>
+
+  <p>The Boltzmann distribution this energy induces at inverse temperature \(\beta\) is \(\pi_\beta(x) \propto e^{-\beta E(x)}\). As \(\beta\to\infty\) the distribution concentrates on the global minima (feasible assignments); at small \(\beta\) it is broad and easy to explore. Parallel tempering is the device that gets the best of both.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="pt">9. Parallel tempering (replica exchange)</h2>
+
+  <p>The engine runs \(N\) <strong>replicas</strong> of the system simultaneously, each held at a different temperature on a ladder. Hot replicas roam freely across energy barriers; cold replicas refine deep minima. Periodically neighbors swap configurations, ferrying good states discovered by hot replicas down to cold ones and vice versa. This is the textbook cure for rugged, multimodal landscapes.</p>
+
+  <h3>9.1 The temperature ladder</h3>
+  <p>Temperatures are geometric between <code>t_min</code> and <code>t_max</code> (<code>TemperatureLadder</code>):</p>
+  <div class="eqn">\[ T_r \;=\; T_{\min}\,\Big(\tfrac{T_{\max}}{T_{\min}}\Big)^{\frac{r}{N-1}}, \qquad r = 0,1,\dots,N-1. \]</div>
+  <p>A geometric (constant-ratio) spacing is the standard default because, for many systems, it produces roughly uniform swap-acceptance across the ladder.</p>
+
+  <h3>9.2 Effective inverse temperature with Lagrange scaling</h3>
+  <p>A distinctive twist: each replica also carries a per-rung <em>Lagrange scale</em> \(\sigma_r\), geometric from <code>lambda_scale_cold</code> (rung 0) to <code>lambda_scale_hot</code> (rung \(N-1\)). The effective inverse temperature is</p>
+  <div class="eqn">\[ \beta_r \;=\; \frac{\sigma_r}{T_r} \qquad(\text{\texttt{EffectiveBeta}}). \]</div>
+  <p>This lets hot replicas explore with <em>weakened</em> constraint pressure (when the scales differ) while cold replicas enforce constraints strongly — a way to decouple "how much do I care about constraints" from raw temperature. With the default scales \(=1\) it reduces to ordinary PT, \(\beta_r = 1/T_r\).</p>
+
+  <h3>9.3 One sweep</h3>
+  <p>An <em>epoch</em> is <code>sweeps</code> sweeps followed by a dual update. A single sweep (<code>RunEpoch</code> body) is:</p>
+  <pre><span class="k">for</span> each sweep:
+    <span class="c">// 1. Local moves, one per replica, in parallel (OpenMP)</span>
+    <span class="k">#pragma omp parallel for</span>
+    <span class="k">for</span> replica in 0..N-1:
+        StepReplica(replica)            <span class="c">// Metropolis proposal + accept/reject</span>
+    <span class="c">// 2. Replica exchange across the whole ladder</span>
+    AttemptSwaps()
+    <span class="c">// 3. Bookkeeping: replica flow, energy moments</span>
+    UpdateReplicaFlow()
+    RecordEnergyStats()
+<span class="c">// after the sweeps:</span>
+DualUpdate()                            <span class="c">// adapt multipliers / penalties</span>
+OptimizeTemperatureLadder()             <span class="c">// optional feedback ladder retuning</span></pre>
+
+  <h3>9.4 The Metropolis step (per replica)</h3>
+  <p><code>StepReplica</code> proposes one candidate (via a move, §10), computes its energy, and accepts with the Metropolis rule at the replica's effective \(\beta\):</p>
+  <div class="eqn">\[
+  P_{\text{accept}} \;=\; \min\!\Big(1,\; \exp\big[-\beta_r\,(E_{\text{cand}} - E_{\text{cur}})\big]\Big).
+  \]</div>
+  <p>Downhill moves (\(E_{\text{cand}} \le E_{\text{cur}}\)) are always accepted; uphill moves are accepted with probability \(e^{-\beta_r \Delta E}\). This is exactly detailed balance for \(\pi_{\beta_r}\) — provided the proposal is symmetric, which the bit-flip moves are (see the caveat on the plaintext move in §10).</p>
+
+  <h3>9.5 The swap step</h3>
+  <p><code>AttemptSwaps</code> walks adjacent pairs \((r, r{+}1)\) and exchanges their configurations with the replica-exchange acceptance probability. With \(\Delta\beta = \beta_r - \beta_{r+1}\) and \(\Delta E = E_r - E_{r+1}\):</p>
+  <div class="eqn">\[
+  \log P_{\text{swap}} \;=\; (\beta_r - \beta_{r+1})\,(E_r - E_{r+1}) \;=\; \Delta\beta\,\Delta E,
+  \qquad P_{\text{swap}} = \min(1, e^{\Delta\beta\,\Delta E}).
+  \]</div>
+  <p>This is the standard Metropolis criterion for swapping two temperatures in the joint product distribution \(\pi_{\beta_r}\!\otimes\pi_{\beta_{r+1}}\); it preserves the stationary distribution of the whole ensemble. When a swap is accepted the engine swaps everything tied to that replica — configuration, cached score, energy, value buffer, key cache, and flow direction — so each rung remains internally consistent.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="moves">10. The moves and updates</h2>
+
+  <p>Proposals come in two flavors: <em>random mutations</em> (four families) and the <em>constraint-repair</em> move. <code>StepReplica</code> first tries the repair move with probability <code>repair_move_prob</code> (if the lowered XTS metadata is present); otherwise it calls <code>Mutate</code>.</p>
+
+  <h3>10.1 Random mutation families</h3>
+  <p><code>Mutate</code> rolls a uniform \(u\in[0,1)\) and picks one of the local moves, with a schedule-aware word swap mixed into the key branch:</p>
+
+  <table>
+    <thead><tr><th>#</th><th>Family</th><th>Trigger</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td><strong>wire bit flip</strong></td><td>\(u &lt; 0.65\) and wires exist</td><td>pick a random wire byte, XOR a random single bit. The workhorse local move of the lowered model.</td></tr>
+      <tr><td>1</td><td><strong>plaintext ASCII resample</strong></td><td>\(0.65 \le u &lt; 0.9\)</td><td>pick a random plaintext byte, replace it with a uniformly drawn text-ASCII character.</td></tr>
+      <tr><td>2</td><td><strong>key bit flip</strong></td><td>key branch, non-swap</td><td>pick key1 or key2 (50/50), pick a random byte, XOR a random single bit.</td></tr>
+      <tr><td>3</td><td><strong>key word swap</strong></td><td>key branch, 50% when a 32-byte key exists</td><td>pick key1 or key2, choose two of the eight AES-256 4-byte words, and swap the words. This is symmetric but much larger than a single-bit avalanche move.</td></tr>
+    </tbody>
+  </table>
+
+  <p>The bit flips and word swaps are <strong>symmetric</strong> proposals (applying the same mutation again returns to the old state), so the plain Metropolis ratio in §9.4 is correct. The plaintext resample is <em>almost</em> symmetric; the source comment flags that strict reversibility only holds once the byte is already within the ASCII support. In practice it acts as a fast "repair" toward the ASCII prior.</p>
+
+  <h3>10.2 The constraint-repair (Gibbs-style) move</h3>
+  <p>This is the cleverest move and the reason the lowered block metadata exists. Given the replica's <em>current</em> keys, the goal constraints for a block can be satisfied <em>exactly and all at once</em> by simply decrypting the target ciphertext. <code>RepairMove</code> picks a block and computes:</p>
+
+  <div class="eqn">\[
+  T \;=\; \mathrm{AES}_{K_2}^{(R)}\!\big(\mathrm{LE}_{128}(s)\big) \otimes \alpha^{\,j}, \qquad
+  \widehat{P} \;=\; \mathrm{AES}^{-1,(R)}_{K_1}\!\big(C \oplus T\big) \;\oplus\; T,
+  \]</div>
+
+  <p>and writes \(\widehat{P}\) into that block's plaintext. By construction the predicted ciphertext now equals \(C\) for that block, so every <span class="pill goal">GOAL</span> residual there drops to zero in one shot — for any round count \(R\). This is effectively a block Gibbs update of the plaintext conditioned on the keys.</p>
+
+  <div class="callout note">
+    The strategic consequence is stated in the source itself: with the repair move, <em>feasibility reduces to finding a key whose decryption is ASCII.</em> The goal constraints become free; the search collapses onto the key space and the ASCII prior. The exact inverse cipher <code>DecryptReducedRound</code> (InvShiftRows / InvSubBytes / InvMixColumns with the \(\{9,11,13,14\}\) GF coefficients) is the mirror of <code>EncryptReducedRound</code>.
+  </div>
+
+  <h3>10.3 Replica initialization</h3>
+  <p>At construction, replica 0 starts from the supplied initial assignment; every other replica is the initial assignment after one <code>Mutate</code> (and a wire re-derivation if the mutation touched a non-wire), giving a diverse starting ensemble. Each replica also gets its own RNG stream seeded by <code>seed + φ·(i+1)</code> with the golden-ratio constant, so the OpenMP-parallel replica steps are independent and reproducible.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="delta">11. Incremental (delta) scoring</h2>
+
+  <p>Re-evaluating the entire lowered circuit on every proposal would be ruinously slow — there are thousands of ops. For the common case (a wire bit flip), the engine instead does <strong>incremental evaluation</strong> in <code>ScoreWireFlipAffected</code>, the key performance trick.</p>
+
+  <p>Each replica keeps a persistent <code>ValueBuffer</code> with the current value of every op output. When wire \(v\) changes, the engine:</p>
+  <ol>
+    <li>writes the new byte into \(v\) and seeds a work queue with it;</li>
+    <li>performs a <strong>BFS over the dataflow graph</strong> <code>ops_by_input_</code>: for each op consuming a changed value, recompute it (<code>EvaluateOpInto</code>); if its output actually changed, enqueue it. A monotonically increasing <em>mark stamp</em> per replica prevents revisiting and avoids clearing arrays each time;</li>
+    <li>collects the set of <em>affected constraints</em> via <code>constraints_by_value_</code> and re-scores only those, updating <code>hamming_score</code> and <code>violations</code> by the residual deltas;</li>
+    <li>records an <strong>undo log</strong> of \((\text{value id}, \text{old bytes})\) pairs so that if the Metropolis step rejects, <code>RestoreValues</code> rolls back in \(O(\text{touched})\) instead of recomputing.</li>
+  </ol>
+
+  <p>So an accepted/rejected wire flip costs work proportional to the size of its dependency cone, not the whole circuit. Non-wire moves (plaintext/key changes, or the repair move) fall back to a full <code>EvaluateValuesAndDerive</code> + <code>ScoreFromValues</code>, because they can change many values at once.</p>
+
+  <h3>Wire derivation</h3>
+  <p><code>EvaluateValuesInternal</code> can also <em>derive</em> wires: when an op output feeds a <code>DEFINE8</code> whose left side is a wire, the computed value is propagated into the wire buffer (transitively through chained definitions). This is how a fresh plaintext/key assignment gets a fully consistent set of internal wires before scoring.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="dual">12. Dual updates: adapting multipliers and penalties</h2>
+
+  <p>After each epoch, <code>DualUpdate</code> performs the <strong>dual ascent</strong> step of the method of multipliers. First it computes the replica-scale-weighted mean residual of each constraint across the ensemble:</p>
+  <div class="eqn">\[ \bar r_i \;=\; \frac{\sum_r \sigma_r\, r_i^{(r)}}{\sum_r \sigma_r}. \]</div>
+  <p>Then it updates, depending on <code>dual_mode</code>:</p>
+
+  <h3>12.1 Fixed mode</h3>
+  <p>A constant-step gradient ascent on the dual, applied to ASCII and consistency constraints (the goal multiplier is steered by the goal ramp instead):</p>
+  <div class="eqn">\[ \lambda_i \;\leftarrow\; \max\!\big(0,\; \lambda_i + \eta\,\bar r_i\big), \qquad \eta = \texttt{dual\_eta}. \]</div>
+  <p>This is exactly the classic multiplier update \(\lambda \leftarrow \lambda + \eta\,c(x)\): constraints that remain violated on average steadily accrue larger multipliers, increasing the energy cost of violating them, which pressures the cold replicas to satisfy them. The penalty \(\rho_i = \mu\) is constant.</p>
+
+  <h3>12.2 Scheduled mode</h3>
+  <p>A per-class adaptive scheme that decides, for each class, whether to <em>update the multiplier</em> or <em>escalate the penalty</em> based on whether the violation is shrinking fast enough. With per-class mean violation \(v_c\) and previous value \(v_c^{\text{prev}}\):</p>
+  <div class="eqn">\[
+  \text{if } v_c \le \kappa\, v_c^{\text{prev}} \;(\text{shrinking}):\quad \lambda_i \leftarrow \max(0,\ \lambda_i + \rho_c\, \bar r_i)\ \ \forall i\in c
+  \]</div>
+  <div class="eqn">\[
+  \text{else (stalled)}:\quad \rho_c \leftarrow \max\!\big(\rho_c\cdot\gamma,\ \rho_c + \epsilon\big)
+  \]</div>
+  <p>where \(\kappa=\) <code>scheduled_violation_shrink</code> (e.g. 0.75) and \(\gamma=\) <code>scheduled_rho_growth</code> (e.g. 2.0). This mirrors the standard convergence test in augmented-Lagrangian solvers: if the constraint is converging, take a multiplier step; if it has stalled, increase the penalty to squeeze harder. After 6 consecutive escalations with a class still above <code>scheduled_eta_target</code>, the engine raises an <code>infeasibility_suspected</code> flag — a principled "this window probably has no ASCII-consistent solution" signal.</p>
+
+  <p>Either way it finishes by refreshing the penalty cache and recomputing all replica energies (because the energy function itself just changed), then resetting the energy statistics.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="ladder">13. Feedback temperature-ladder adaptation</h2>
+
+  <p>A geometric ladder is a good default, but the optimal ladder depends on where the energy landscape's bottlenecks are. With <code>ladder_mode = "feedback"</code>, <code>OptimizeTemperatureLadder</code> retunes the interior temperatures using the <strong>feedback-optimized</strong> method (Katzgraber–Trebst–Huse–Troyer), driven by replica <em>flow</em>.</p>
+
+  <h3>13.1 Tracking replica flow and round trips</h3>
+  <p>Each replica is labeled with a direction: it is set to "up" when it touches the bottom rung and "down" when it touches the top rung. A full bottom→top→bottom excursion is a <strong>round trip</strong>, the canonical measure of how well the ladder mixes. <code>UpdateReplicaFlow</code> increments per-rung up/down counters and round-trip counts every sweep.</p>
+
+  <h3>13.2 The optimization</h3>
+  <p>Let \(f_i\) be the fraction of time rung \(i\) is moving "up": \(f_i = \frac{n^\uparrow_i}{n^\uparrow_i + n^\downarrow_i}\). The method defines a target density proportional to \(\sqrt{|\,df/dT\,|}\), which places more rungs where the flow changes fastest (the bottlenecks). The code builds the cumulative measure</p>
+  <div class="eqn">\[ g(i) \;=\; \sum_{k\le i} \sqrt{\,|f_k - f_{k-1}| + \varepsilon\,}, \qquad \widehat g(i) = g(i)/g(N{-}1), \]</div>
+  <p>then redistributes the interior temperatures so they are equally spaced in this normalized cumulative coordinate (interpolating the old temperatures against \(\widehat g\)), holding the endpoints fixed and keeping the ladder strictly increasing. The retuning only fires after a burn-in, on a fixed epoch interval, and only once enough round trips have accumulated to make the flow estimate meaningful; afterward it resets the flow counters.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="relaxed-energy">14. The continuous relaxation: smooth residuals &amp; energy</h2>
+
+  <p>The <strong>continuous-relaxed engine</strong> (<code>continuous_relaxed.cpp</code>) is a sibling of the PT solver, not a replacement. It shares the circuit IR, the augmented-Lagrangian skeleton, the replica-exchange swaps, the harvesting logic, and the entire diagnostics layer. What it changes is the <em>shape of the energy</em> and the <em>repertoire of moves</em>. This section covers the energy; <a href="#relaxed-keys">§15</a>–<a href="#relaxed-dual">§17</a> cover the moves and the schedule.</p>
+
+  <h3>14.1 Graded residuals</h3>
+  <p>The PT scorer of <a href="#residuals">§7</a> returns integer Hamming bits, and its ASCII residual is a flat 0/1 indicator. The relaxed engine instead computes a <strong>smooth residual</strong> \(\tilde r_i(x)\in[0,1]\) for every constraint (<code>SmoothResidual</code>):</p>
+
+  <div class="eqn">\[
+  \tilde r_i =
+  \begin{cases}
+  \dfrac{\operatorname{TextAsciiDist}(b)}{8} & \text{ASCII} \\[2.2ex]
+  \dfrac{\operatorname{popcount}(a \oplus b)}{8} & \text{EQ8 / DEFINE8} \\[2.2ex]
+  \dfrac{1}{8c}\displaystyle\sum_{k=0}^{c-1}\operatorname{popcount}(a_k \oplus b_k) & \text{EQ128 (over } c \text{ bytes)}
+  \end{cases}
+  \]</div>
+
+  <p>The equality cases are just the §7 Hamming distances rescaled to a per-byte \([0,1]\) range. The decisive change is the ASCII term. The hard scorer answers a flat yes/no — <em>is this byte printable?</em> — which gives the sampler no gradient: every non-printable byte looks equally bad. <code>TextAsciiDistance(b)</code> instead returns the <em>minimum number of bit flips</em> needed to turn \(b\) into the nearest text-ASCII byte (any of <code>0x09, 0x0A, 0x0D</code> or the printable range <code>0x20–0x7E</code>). A byte that is one bit away from printable now has residual \(1/8\) rather than \(1\), so "almost printable" is rewarded and the ASCII domain becomes a smooth basin instead of a cliff. This graded ASCII distance is the heart of the relaxation.</p>
+
+  <h3>14.2 Two scores in one</h3>
+  <p>Each replica carries a <code>ContinuousRelaxedScore</code> bundling <em>both</em> representations:</p>
+  <ul>
+    <li>the exact, discrete <code>ScoreData</code> (<code>hard</code>) — integer residuals, <code>hamming_score</code>, and <code>violations</code>, used unchanged for feasibility tests, harvesting, and diagnostics;</li>
+    <li>the smooth residual vector and its running sum <code>smooth_sum</code> — used <em>only</em> to drive the optimizer's energy.</li>
+  </ul>
+  <p>So nothing about what counts as a <em>solution</em> is relaxed: a state is feasible iff its hard \(H(x)=0\), exactly as before. The relaxation reshapes the slopes the sampler descends, never the location of the global minima.</p>
+
+  <h3>14.3 The relaxed energy</h3>
+  <p><code>Energy</code> is the same augmented Lagrangian as <a href="#energy">§8</a>, but evaluated on the smooth residuals:</p>
+  <div class="eqn">\[ E(x) \;=\; \sum_i \Big[\, \lambda_i\, \tilde r_i(x) \;+\; \tfrac12\, \rho_i\, \tilde r_i(x)^2 \,\Big]. \]</div>
+  <p>One bookkeeping consequence of pre-normalizing the residuals: the initial multipliers are the raw class weights <code>ascii_weight</code>, <code>consistency_weight</code>, <code>goal_weight</code> with <em>no</em> division by 8. (The PT engine divides the <em>weight</em> by 8 because its residuals run \(0\!-\!8\); the relaxed engine divides the <em>residual</em> by 8 and keeps the weight — the two conventions land on the same per-byte scale.)</p>
+
+  <div class="callout note">
+    Because each \(\tilde r_i = 0 \iff r_i = 0\), the relaxed energy still satisfies \(E(x)=0 \iff x\) is feasible. The smooth and hard objectives share their zero set; the smooth one simply has a friendlier interior.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="relaxed-keys">15. Profile-guided key-space moves</h2>
+
+  <p>The <a href="#moves">repair move</a> already reduced feasibility to <em>"find a key whose decryption is ASCII."</em> But finding that key by flipping bits is hopeless: AES's avalanche means a single key-bit change re-randomizes every plaintext byte after repair, so the post-repair ASCII residual behaves like noise and bit/byte flips merely random-walk. The relaxed engine's signature contribution is a set of moves that resample or profile larger chunks of key space. The one-round moves are exact Gibbs conditionals; for multi-round XTS windows, the engine now uses a cached profile-energy approximation over \(K_1\) to make \(K_2\) moves informative instead of nearly flat.</p>
+
+  <h3>15.1 All-block ADMM repair, cached</h3>
+  <p><code>ApplyAdmmRepair</code> generalizes the single-block repair move to the whole window at once: for <em>every</em> registered XTS block it derives the tweak from \(K_2\), pre-whitens the target ciphertext, decrypts under \(K_1\), and post-whitens, writing the exact plaintext for that block. The expanded key schedules and the result are memoized in a per-replica <code>KeyCache</code> keyed on \((K_1,K_2)\); <code>RepairReplicaIfNeeded</code> re-runs it only when the key actually changed, so unchanged replicas pay nothing.</p>
+
+  <div class="callout">
+    <strong>The fast ASCII energy.</strong> After repair, every goal and consistency residual is identically zero, so the <em>entire</em> Lagrangian collapses to the ASCII-printability term. <code>AsciiEnergyFromPlaintext</code> reads that energy straight off the plaintext bytes without re-deriving a single wire, making the 256-way and \(256^2\)-way key scans below roughly an order of magnitude cheaper than a full circuit evaluation.
+  </div>
+
+  <h3>15.2 The one-round decryption identity</h3>
+  <p>For one round, each plaintext byte is an explicit closed form in just two key1 bytes. With \(s=\operatorname{InvShiftRows}(\text{dst})\):</p>
+  <div class="eqn">\[
+  P_b[\text{dst}] \;=\; \operatorname{InvSbox}\!\big[\, C_b[s] \,\oplus\, T_b[s] \,\oplus\, rk_1[s] \,\big] \;\oplus\; rk_0[\text{dst}] \;\oplus\; T_b[\text{dst}],
+  \]</div>
+  <p>where (for AES-256 the first two round keys are the raw key) \(rk_0[\text{dst}]=K_1[\text{dst}]\) and \(rk_1[s]=K_1[16+s]\), and \(T_b\) is block \(b\)'s tweak. The two key bytes \(rk_0[\text{dst}]\) and \(rk_1[s]\) are <em>coupled through the S-box</em>, which is exactly why no single-byte move can place them jointly — and why the engine moves them as a pair.</p>
+
+  <h3>15.3 Move 1 — the key-column pair block move</h3>
+  <p><code>KeyColumnPairBlockStep</code> picks a destination position <code>dst</code> and considers the two key1 bytes \((rk_0[\text{dst}], rk_1[s])\) that determine plaintext byte <code>dst</code> in <em>every</em> block of the window (all blocks share the key). It scans all \(256\times256\) value pairs, accumulating the summed ASCII energy across the window, then resamples the pair from the exact Boltzmann conditional at the replica's \(\beta_r\):</p>
+  <div class="eqn">\[ \Pr(rk_0,\,rk_1) \;\propto\; \exp\!\Big[-\beta_r \sum_b \big(\lambda_b \tilde r_b + \tfrac12\rho_b \tilde r_b^2\big)\Big]. \]</div>
+  <p>With probability <code>CR_BLOCK_GREEDY</code> it instead takes the exact \(\arg\min\) pair (a "greedy polish"), because pure Gibbs concentration is capped by the many near-printable-but-infeasible pairs and would otherwise leave a residual ASCII plateau. Since the 16 positions use <em>disjoint</em> key1 bytes, greedily fixing each is the exact per-position argmin and drives the entire key1-given-key2 sub-problem to zero. This is the move that actually descends to a feasible one-round key.</p>
+
+  <h3>15.4 Move 2 — the key2 tweak-refit on a profile energy</h3>
+  <p>Moving \(K_2\) is subtler: \(K_2\) sets the tweaks, and a bare \(K_2\)-byte change is scored against a \(K_1\) that was fitted to the <em>old</em> tweaks, so every proposal looks catastrophic and is rejected — the chain can never explore \(K_2\). The fix is to score \(K_2\) by its <strong>profile energy</strong>, the best it could do if \(K_1\) were re-optimized:</p>
+  <div class="eqn">\[ E^\star(K_2) \;=\; \min_{K_1} E(K_1, K_2). \]</div>
+  <p><code>GreedyKey1ForKey2</code> computes \(E^\star\) exactly (per-position argmin over \(K_1\) for the proposed tweaks — exact because the positions are independent in \(K_1\)). <code>KeyTweakRefitStep</code> then perturbs 1–2 bytes of \(K_2\), recomputes \(E^\star\), and accepts on \(\Delta E^\star\) with the Metropolis rule at \(\beta_r\). This is what lets the sampler discover a \(K_2\) whose tweaks admit an all-printable decryption — the prerequisite for harvesting a feasible key. Because a refit costs ~16× a block move, it runs only on the cold replicas (temperature \(\le\) <code>t_min · CR_REFIT_COLD_RATIO</code>), where feasible solutions are actually harvested.</p>
+
+  <h3>15.5 Move 3 — multi-round profile Gibbs</h3>
+  <p>For \(R\ge2\), MixColumns couples the four bytes of a column, so the closed-form one-round identity above is gone and byte-wise Gibbs on a single key byte is often too flat across a 10-block window. The multi-round path keeps the same <em>profile energy</em> idea but computes it approximately: <code>KeyProfileCache</code> stores a \(32\times256\) table of repaired ASCII energies for candidate \(K_1\) bytes, <code>ProfileKey1ForKey2MultiRound</code> performs coordinate-descent sweeps over those rows, and <code>KeyTweakProfileGibbsStep</code> scans 256 values of one \(K_2\) byte using the profiled \(K_1\) for each value. The table is conservatively invalidated when the source key changes; this favors correctness first, while leaving room for narrower key-schedule dependency refreshes later.</p>
+
+  <p><code>Key1ProfileGibbsStep</code> is the cheaper companion move: it refreshes one \(K_1\) profile row, samples the selected key byte from the cached 256-way Boltzmann conditional, then repairs and fully rescores the replica. The multi-round profile path is selected only for XTS windows with both AES-256 keys present; non-XTS circuits still fall back to the generic byte-wise move.</p>
+
+  <h3>15.6 Move 4 — byte-wise key Gibbs (the fallback)</h3>
+  <p><code>KeyByteGibbsStep</code> remains the general-purpose fallback. It picks one key byte (in \(K_1\) or \(K_2\)), scores all 256 candidate values — via the fast ASCII energy when repair is active, or a full re-derivation otherwise — and resamples it from the exact conditional at \(\beta_r\). It is still useful for non-XTS circuits and as a fallback when the specialized profile moves cannot run.</p>
+
+  <h3>15.7 The move mix</h3>
+  <p>When a step elects a key move (probability <code>key_gibbs_prob</code>), the one-round branch chooses among the exact/refit moves; the split is env-tunable for A/B sweeps:</p>
+  <table>
+    <thead><tr><th>Roll \(u\)</th><th>Move</th><th>Knob</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td>\(u < \) <code>CR_REFIT_PROB</code></td><td>tweak refit</td><td>default 0.0</td><td>search \(K_2\) with \(K_1\) re-optimized (cold replicas only)</td></tr>
+      <tr><td>next <code>CR_BLOCK_PROB</code></td><td>column-pair block</td><td>default 0.6</td><td>exact joint Gibbs on the S-box-coupled \(K_1\) pair</td></tr>
+      <tr><td>next <code>CR_KEY2BLOCK_PROB</code></td><td>key2 column-pair block</td><td>default 0.0</td><td>one-round mirror move on the tweak key \(K_2\)</td></tr>
+      <tr><td>remainder</td><td>byte Gibbs</td><td>—</td><td>256-way resample of one \(K_1\)/\(K_2\) byte</td></tr>
+    </tbody>
+  </table>
+  <p>For \(R\ge2\), the XTS branch instead chooses between <code>KeyTweakProfileGibbsStep</code> and <code>Key1ProfileGibbsStep</code>; <code>CR_PROFILE_K2_PROB</code> (default 0.5) controls how often the more expensive \(K_2\)-profile scan is used, and <code>CR_PROFILE_K1_SWEEPS</code> controls the number of coordinate-descent sweeps when approximating \(E^\star(K_2)\).</p>
+  <div class="callout note">
+    Setting <code>key_gibbs_prob = 0</code> disables the specialized key Gibbs/profile branch and leaves exploration to the gradient-biased proposal pool. The conditionals are most identifiable when the window spans several blocks across multiple sectors, so the key bytes are over-determined; <code>CR_FREEZE_KEY2</code> pins \(K_2\) for ablations.
+  </div>
+  <div class="callout">
+    <strong>Two-round smoke result.</strong> On a realistic 10-block fixture window rebuilt with <code>aes_rounds=2</code>, a bounded inversion smoke from a non-true key reduced the hard residual from 653 to 76 while exercising <code>key_tweak_profile_gibbs</code>, <code>key_word_swap</code>, and <code>key_schedule_chain</code>. It did not guarantee full recovery in that budget, but it verified the end-to-end inversion path, cache consistency, and move instrumentation.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="relaxed-moves">16. Gradient-biased ensemble proposals</h2>
+
+  <p>When a step does <em>not</em> take a key Gibbs move, the relaxed engine does not propose a single mutation and accept/reject it. Instead it builds a small <strong>pool of candidates</strong>, weights them by a gradient-biased score, samples one, and then applies an ordinary Metropolis test to it (<code>BuildActionWeightsSampled</code> → <code>StepReplica</code>).</p>
+
+  <h3>16.1 The candidate pool</h3>
+  <p>Up to <code>kSampledCandidatePool = 8</code> distinct actions are drawn from up to <code>kSampledCandidateAttempts = 64</code> samples (deduplicated by an <code>ActionKey</code> hash). Each candidate is scored to energy \(E_{\text{cand}}\) and assigned a weight</p>
+  <div class="eqn">\[ w \;=\; \exp\!\Big[\, \tfrac12\big(E_{\text{base}} - E_{\text{cand}}\big) \;-\; \tfrac14\, \text{sboxBias} \,\Big]. \]</div>
+  <p>One action is then selected with probability \(\propto w\), and accepted with the standard rule \(P=\min(1, e^{-\beta_r \Delta E})\). The pool therefore biases proposals toward energy-lowering, S-box-aware moves (a "gradient-biased ensemble" step) while the Metropolis correction keeps the accept/reject stochastic.</p>
+
+  <h3>16.2 Seven action families</h3>
+  <p><code>SampleRandomAction</code> and the key-profile branch report seven move families (the family index also keys the per-family acceptance stats):</p>
+  <table>
+    <thead><tr><th>#</th><th>Family</th><th>What it flips</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td>wire bit flip</td><td>a random <em>non-linear-determined</em> wire byte (see §16.3)</td></tr>
+      <tr><td>1</td><td>plaintext bit flip</td><td>one bit of a random plaintext byte</td></tr>
+      <tr><td>2</td><td>key bit flip</td><td>one bit of a random \(K_1\)/\(K_2\) byte</td></tr>
+      <tr><td>3</td><td>S-box-input wire flip</td><td>a wire that feeds an <code>SBOX8</code> op — gets the S-box bias below</td></tr>
+      <tr><td>4</td><td>key chain flip</td><td>the same bit across key bytes spaced 8 apart — targets the AES-256 key-schedule word structure</td></tr>
+      <tr><td>5</td><td>key word swap</td><td>swap two full 4-byte AES-256 words in \(K_1\) or \(K_2\), then repair and fully rescore</td></tr>
+      <tr><td>6</td><td>key profile Gibbs</td><td>multi-round \(K_1\)/\(K_2\) profile Gibbs moves selected by <code>key_gibbs_prob</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>16.3 S-box table bias and pinned wires</h3>
+  <p>Two precomputations sharpen the wire moves:</p>
+  <ul>
+    <li><strong>S-box flip table</strong> (<code>SboxTableBias</code>): a \(256\times256\times8\) table <code>sbox_flip_delta_[in][target][bit]</code> stores the exact change in the S-box output's Hamming distance to its target when bit <code>bit</code> of the input is flipped. For a family-3 proposal the engine sums this delta over the affected S-box constraints and folds it into the proposal weight (the \(-\tfrac14\,\text{sboxBias}\) term), steering S-box-input flips toward the S-box truth instead of away from it.</li>
+    <li><strong>Linear-determined wires</strong> (<code>linear_determined_wire_</code>): wires that are outputs of linear ops (<code>XOR</code>, <code>MIX_COLUMN_BYTE</code>, <code>XTS_MUL_X_BYTE</code>, <code>EXTRACT_BYTE</code>, …) are pinned by linear propagation and would be overwritten on the next derive, so flipping them is wasted work. The wire family skips them and spends its entropy on the genuinely free, S-box-coupled wires.</li>
+  </ul>
+
+  <h3>16.4 Incremental scoring of a pooled flip</h3>
+  <p>Scoring eight candidates per step would be ruinous without the delta machinery of <a href="#delta">§11</a>. <code>TryScoreActionDelta</code> gates the fast path to single S-box/wire flips; <code>ScoreWireFlipAffected</code> then BFS-walks only the dependency cone and updates <em>both</em> the smooth residuals (and <code>smooth_sum</code>) and the hard <code>ScoreData</code> incrementally, using per-replica mark stamps and an undo log. Plaintext/key/chain/word-swap moves and the repair fall back to a full <code>EvaluateValuesAndDerive</code> + <code>ScoreRelaxed</code>.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="relaxed-dual">17. Adam dual ascent &amp; population annealing</h2>
+
+  <h3>17.1 Adam on the multipliers</h3>
+  <p>The relaxed <code>DualUpdate</code> keeps the per-class penalty escalation of the scheduled mode (<a href="#dual">§12.2</a>) — if a class's mean violation stalls instead of shrinking, its \(\rho_c\) is multiplied by <code>scheduled_rho_growth</code> — but it replaces the plain constant-step multiplier ascent with an <strong>Adam</strong> optimizer on the dual. For each ASCII/consistency constraint it tracks first- and second-moment estimates of the mean residual \(\bar r_i\), bias-corrects them, and adds a heavy-ball momentum term:</p>
+  <div class="eqn">\[
+  m_i \leftarrow \beta_1 m_i + (1-\beta_1)\,\bar r_i, \qquad
+  v_i \leftarrow \beta_2 v_i + (1-\beta_2)\,\bar r_i^{\,2},
+  \]</div>
+  <div class="eqn">\[
+  \lambda_i \;\leftarrow\; \max\!\Big(0,\; \lambda_i \;+\; \eta\,\frac{\hat m_i}{\sqrt{\hat v_i}+\varepsilon} \;+\; 0.9\,(\lambda_i - \lambda_i^{\text{prev}})\Big),
+  \]</div>
+  <p>with \(\beta_1=0.9,\ \beta_2=0.999\) and \(\eta=\) <code>dual_eta</code>. The per-coordinate adaptive step makes the multiplier schedule far less sensitive to the raw residual scale than the fixed-step ascent of the PT engine.</p>
+
+  <h3>17.2 Population annealing</h3>
+  <p>Where the PT engine retunes its ladder by feedback (<a href="#ladder">§13</a>), the relaxed engine keeps a fixed geometric ladder and instead resamples the ensemble. After each epoch's dual update, <code>PopulationAnneal</code> draws a fresh population of replicas <em>with replacement</em>, each picked with probability proportional to its cold-temperature Boltzmann weight:</p>
+  <div class="eqn">\[ \Pr(\text{clone replica } i) \;\propto\; \exp\!\big[-\beta_0\,(E_i - E_{\min})\big]. \]</div>
+  <p>This sequential-Monte-Carlo step culls high-energy replicas and clones promising ones, concentrating compute on the basins that look most feasible — a natural fit for an engine whose whole job is to find the rare ASCII-consistent key.</p>
+
+  <div class="callout warn">
+    <strong>Marginals require a real solution.</strong> The relaxed <code>Metrics()</code> adds one more gate to <code>marginal_trusted</code>: at least one exact feasible solution must have been harvested (<code>total_harvested_ &gt; 0</code>). ESS and R-hat only certify that the cold chain <em>moved</em>, not that it moved toward the truth — a replica can be sharply but wrongly confident while never visiting a feasible key — so key-information is reported as trustworthy only once a zero-residual key has actually been seen.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="diagnostics">18. Diagnostics: the instrumentation layer</h2>
+
+  <p>A large fraction of the engine exists to <em>measure</em> the search. <code>Metrics()</code> assembles a rich diagnostics struct (surfaced to Python as a dict). The most mathematically interesting pieces:</p>
+
+  <h3>18.1 Thermodynamic integration → relative \(\log Z\)</h3>
+  <p>Per rung the engine keeps a running mean and variance of energy via <strong>Welford's algorithm</strong> (<code>RecordEnergyStats</code>). Treating the rungs as samples of \(\langle E\rangle_\beta\) along the inverse-temperature axis, it estimates the (relative) log partition function by the thermodynamic-integration identity \(\frac{d\log Z}{d\beta} = -\langle E\rangle_\beta\), integrated by the trapezoid rule (<code>LogZEstimate</code>):</p>
+  <div class="eqn">\[ \log Z(\beta) \;\approx\; \log Z_0 \;-\; \int_0^{\beta} \langle E\rangle_{\beta'}\, d\beta', \qquad \log Z_0 = (\text{state bits})\cdot \ln 2. \]</div>
+  <p>The reference \(\log Z_0\) is the log count of all plaintext+key states (the \(\beta=0\) uniform distribution). The result is explicitly documented as a <em>relative</em> thermodynamic diagnostic over plaintext+key bits, not an absolute feasible-solution count.</p>
+
+  <h3>18.2 Key marginals and information content</h3>
+  <p>On the cold chain (rung 0), after a burn-in, <code>RecordAcceptedKeyStats</code> maintains a sliding window of accepted full keys and counts, per key bit, how often it is 1. Let \(\hat p_b\) be the Laplace-smoothed marginal of bit \(b\) (smoothing \(\alpha=\) <code>marginal_alpha</code> over a window of <code>marginal_window</code> visits). From these it computes:</p>
+  <ul>
+    <li><strong>max deviation</strong> \(\max_b |\hat p_b - \tfrac12|\) — how far any key bit has drifted from uniform;</li>
+    <li><strong>key information</strong> \(\sum_b \big(1 - H_2(\hat p_b)\big)\) bits, where \(H_2\) is the binary entropy — total bits of "knowledge" the sampler has accumulated about the key;</li>
+    <li>a <strong>null baseline</strong>: the expected information a <em>uniform</em> key would spuriously show under finite sampling, computed exactly from the binomial distribution; the reported information subtracts this baseline so noise doesn't masquerade as signal.</li>
+  </ul>
+
+  <h3>18.3 Are the marginals trustworthy? ESS and R-hat</h3>
+  <p>To avoid over-interpreting an unconverged chain, the engine computes two standard MCMC diagnostics on the cold-key Hamming-weight trace:</p>
+  <ul>
+    <li><strong>Effective sample size</strong> via the integrated autocorrelation time \(\tau\): \(\mathrm{ESS} = n / \big(2\tau\big)\), with \(\tau = 1 + 2\sum_{\ell\ge1}\rho_\ell\) summed until the autocorrelation goes non-positive (or the \(6\tau\) self-consistent window is reached).</li>
+    <li><strong>Gelman–Rubin \(\hat R\)</strong> by splitting the trace in half and comparing between-chain and within-chain variance: \(\hat R = \sqrt{\hat V / W}\).</li>
+  </ul>
+  <p>The marginals are flagged <code>trusted</code> only if there are enough distinct cold keys, \(\mathrm{ESS} \ge 25\), and \(\hat R \le 1.1\) — the usual convergence thresholds. Otherwise the reported key-information is forced to zero.</p>
+
+  <h3>18.4 Structural and acceptance diagnostics</h3>
+  <p><code>ComputeAlgebraCounts</code> tallies linear vs nonlinear ops (XOR, MixColumn, XTS-mul, extract are \(\mathrm{GF}(2)\)-linear; only the S-box is nonlinear), variable bit counts, and factor counts — a cheap structural readout of how "algebraic" the instance is. The engine also tracks per-family proposal attempts/accepts, per-pair swap attempts/accepts, per-rung round trips, and (when <code>profile</code> is on) nanosecond timers for every phase of the loop.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="harvest">19. Harvesting feasible solutions</h2>
+
+  <p>Whenever an accepted move drives a replica to <code>hamming_score == 0</code>, <code>MaybeHarvest</code> fires (under an OpenMP critical section). It keys the assignment by its concatenated \((K_1,K_2)\) bytes and inserts it into the feasible set only if that key string is new (<code>seen_keys_</code> deduplication). <code>DrainFeasible</code> later hands these out to the caller. The CLI (<code>sample_blocks.py</code>) loops epochs, draining feasible samples and writing each as a JSON record (keys hex, plaintext hex, per-block plaintext) until a target count is reached, dumping the full metrics struct after every epoch.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="pipeline">20. The end-to-end pipeline</h2>
+
+  <ol>
+    <li><strong>Fixture</strong>: a known plaintext (e.g. lorem ipsum) is AES-XTS encrypted to produce ciphertext + metadata JSON (sector size, start sector, key hex).</li>
+    <li><strong>Load &amp; window</strong>: <code>load_fixture</code> reads it; <code>block_specs_for_fixture</code> slices a window of blocks, computing each block's sector number and in-sector index.</li>
+    <li><strong>Build circuit</strong>: <code>build_xts_block_collection</code> emits the opaque or lowered circuit with shared <code>key1</code>/<code>key2</code> buffers across all blocks plus ASCII constraints on plaintext.</li>
+    <li><strong>Initialize</strong>: random ASCII plaintext + random keys (or, for a sanity-check positive control, a fixture warm start that intentionally leaks the key).</li>
+    <li><strong>Search</strong>: <code>NativeParallelTemperingEngine</code> wraps the C++ engine; the driver runs epochs of sweeps, each epoch ending in a dual update and optional ladder retune.</li>
+    <li><strong>Harvest</strong>: feasible assignments are drained and written out; metrics are logged per epoch.</li>
+  </ol>
+
+  <div class="callout">
+    <strong>Correctness oracle.</strong> The native scorer is continuously cross-checked: <code>NativeParallelTemperingEngine.evaluate</code> compares the C++ residuals to the Python <code>circuit.evaluate</code> residuals and raises if they ever disagree; with <code>validate_python_epoch</code> the per-epoch score is checked too. The pure-Python engine is the semantic ground truth, the C++ engine is the fast path.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="glossary">21. Symbol &amp; parameter glossary</h2>
+
+  <table>
+    <thead><tr><th>Symbol / param</th><th>Code name</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>\(r_i(x)\)</td><td><code>residuals[i]</code></td><td>non-negative violation of constraint \(i\) (Hamming bits or 0/1)</td></tr>
+      <tr><td>\(H(x)\)</td><td><code>hamming_score</code></td><td>sum of residuals; feasible iff 0</td></tr>
+      <tr><td>\(\lambda_i\)</td><td><code>multipliers_</code></td><td>Lagrange multiplier per constraint</td></tr>
+      <tr><td>\(\rho_i,\ \mu\)</td><td><code>penalties_</code>, <code>mu</code></td><td>quadratic penalty coefficient</td></tr>
+      <tr><td>\(E(x)\)</td><td><code>Energy()</code></td><td>augmented-Lagrangian energy \(\sum_i \lambda_i r_i + \tfrac12\rho_i r_i^2\)</td></tr>
+      <tr><td>\(T_r,\ \beta_r\)</td><td><code>temperatures_</code>, <code>EffectiveBeta</code></td><td>rung temperature and effective inverse temperature \(\sigma_r/T_r\)</td></tr>
+      <tr><td>\(\sigma_r\)</td><td><code>replica_scale_</code></td><td>per-rung Lagrange scaling (cold→hot geometric)</td></tr>
+      <tr><td>\(\eta\)</td><td><code>dual_eta</code></td><td>dual ascent step (fixed mode)</td></tr>
+      <tr><td>\(\kappa,\ \gamma\)</td><td><code>scheduled_violation_shrink</code>, <code>scheduled_rho_growth</code></td><td>shrink test threshold and penalty growth factor</td></tr>
+      <tr><td>\(N\)</td><td><code>replicas</code></td><td>number of parallel-tempering replicas</td></tr>
+      <tr><td>\(R\)</td><td><code>aes_rounds</code></td><td>AES rounds modeled (1–14; 14 = full)</td></tr>
+      <tr><td>—</td><td><code>repair_move_prob</code></td><td>probability of the exact-decrypt Gibbs move per step</td></tr>
+      <tr><td>\(f_i\)</td><td><code>replica_up/down_counts</code></td><td>up-flow fraction driving feedback ladder optimization</td></tr>
+      <tr><td colspan="3" style="background:var(--panel-2);color:var(--muted);font-family:var(--mono);font-size:13px;">continuous-relaxed engine (§14–§17)</td></tr>
+      <tr><td>\(\tilde r_i(x)\)</td><td><code>SmoothResidual</code></td><td>graded residual in \([0,1]\); ASCII uses bit-distance to the nearest printable byte</td></tr>
+      <tr><td>\(E^\star(K_2)\)</td><td><code>GreedyKey1ForKey2</code>, <code>ProfileKey1ForKey2MultiRound</code></td><td>exact one-round or approximate multi-round profile energy \(\min_{K_1} E(K_1,K_2)\) used to score \(K_2\) moves</td></tr>
+      <tr><td>—</td><td><code>key_gibbs_prob</code></td><td>probability per step of a key-space Gibbs/profile move</td></tr>
+      <tr><td>—</td><td><code>ApplyAdmmRepair</code></td><td>all-block exact-decrypt repair, memoized per \((K_1,K_2)\)</td></tr>
+      <tr><td>\(\beta_1,\beta_2\)</td><td><code>dual_m_</code>, <code>dual_v_</code></td><td>Adam first/second-moment decay rates for the dual ascent (0.9, 0.999)</td></tr>
+      <tr><td>—</td><td><code>CR_BLOCK_PROB</code>, <code>CR_REFIT_PROB</code></td><td>move-mix split between the column-pair block move and the \(K_2\) tweak-refit</td></tr>
+      <tr><td>—</td><td><code>CR_BLOCK_GREEDY</code></td><td>fraction of block moves that take the exact \(\arg\min\) pair instead of a Boltzmann draw</td></tr>
+      <tr><td>—</td><td><code>CR_REFIT_COLD_RATIO</code></td><td>temperature cutoff (\(\times\) <code>t_min</code>) below which the expensive refit move runs</td></tr>
+      <tr><td>—</td><td><code>CR_PROFILE_K2_PROB</code>, <code>CR_PROFILE_K1_SWEEPS</code></td><td>multi-round profile move split and coordinate-descent effort for approximating \(E^\star(K_2)\)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p>Generated walkthrough of the AES-XTS constrained-sampling decoder. Everything above is derived directly from the source: the energy and acceptance rules from <code>parallel_tempering.cpp</code> and <code>parallel_tempering/proposals.cpp</code> (<code>Energy</code>, <code>StepReplica</code>, <code>AttemptSwaps</code>, <code>DualUpdate</code>, <code>OptimizeTemperatureLadder</code>, <code>KeyWordSwap</code>); the continuous-relaxed engine — smooth residuals, all-block ADMM repair, exact one-round key-column/tweak-refit moves, approximate multi-round profile Gibbs, word-swap proposals, gradient-biased candidate pools, Adam dual ascent, and population annealing — from <code>continuous_relaxed.cpp</code> (<code>SmoothResidual</code>, <code>ApplyAdmmRepair</code>, <code>KeyColumnPairBlockStep</code>, <code>KeyTweakRefitStep</code>, <code>KeyTweakProfileGibbsStep</code>, <code>Key1ProfileGibbsStep</code>, <code>KeyByteGibbsStep</code>, <code>BuildActionWeightsSampled</code>, <code>DualUpdate</code>, <code>PopulationAnneal</code>); the circuit model from <code>circuit.py</code> / <code>xts_model.py</code> / <code>encodings/lowered.py</code>; the cipher from <code>aes_primitives.py</code>; and the orchestration from <code>sampler.py</code> / <code>sample_blocks.py</code> / <code>run_window_fusion_sampler.py</code>.</p>
+  </div>
+</main>
+</div>
+</body>
+</html>

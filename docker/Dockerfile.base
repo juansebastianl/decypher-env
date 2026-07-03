@@ -1,0 +1,32 @@
+# Base image for the HTTP/server adapters (OpenEnv, ORS, NeMo Gym).
+#
+# HTTP adapters run the environment as an isolated service, which is the
+# deployment shape the sandbox is happiest with. The image must contain the C++
+# toolchain (to compile model-authored solvers on demand), the RL SDK + harness
+# sources (compiled on demand, not prebuilt), and bubblewrap (bwrap) so the
+# harness can isolate untrusted solver code.
+#
+# NeMo Gym requires Python >= 3.12; OpenEnv / Verifiers require >= 3.11. This
+# base uses 3.12 to satisfy all of them.
+FROM python:3.12-slim-bookworm
+
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        g++ \
+        libgomp1 \
+        bubblewrap \
+        ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . /app
+
+# Install the package. Per-framework service images extend this and add their
+# own extra (see Dockerfile.openenv / Dockerfile.ors / Dockerfile.nemo).
+RUN pip install --no-cache-dir --upgrade pip
+
+# bwrap needs unprivileged user namespaces. Run the container with
+# --cap-add=SYS_ADMIN or a seccomp/userns policy that allows CLONE_NEWUSER, and
+# do NOT run the service as root in production.

@@ -1,0 +1,11 @@
+# Open Reward Standard (ORS) service image.
+#   docker build -f docker/Dockerfile.base -t aes-solver-base .
+#   docker build -f docker/Dockerfile.ors -t aes-solver-ors .
+#   docker run --rm -p 8001:8001 aes-solver-ors
+FROM aes-solver-base
+
+RUN pip install --no-cache-dir ".[ors]"
+
+EXPOSE 8001
+# Runs the ORS Server hosting the solver-authoring environment.
+CMD ["python", "-c", "from src.decoder.rl.adapters.ors_env import serve; serve()"]

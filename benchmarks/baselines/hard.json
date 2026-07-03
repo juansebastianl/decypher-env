@@ -1,0 +1,73 @@
+{
+  "num_instances": 2,
+  "pass_at_k": {
+    "pass@1": 0.3,
+    "pass@2": 0.55,
+    "pass@3": 0.75,
+    "pass@4": 0.9,
+    "pass@5": 1.0
+  },
+  "solvers": [
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 2,
+      "reward_max": 1.9194217905753426,
+      "reward_mean": 1.9151521598778105,
+      "reward_median": 1.9151521598778105,
+      "reward_min": 1.9108825291802787,
+      "solver": "baseline",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 2,
+      "reward_max": 1.993739337030219,
+      "reward_mean": 1.9930561127063764,
+      "reward_median": 1.9930561127063764,
+      "reward_min": 1.992372888382534,
+      "solver": "random_metropolis",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.5,
+      "instances": 2,
+      "reward_max": 2.570117786689098,
+      "reward_mean": 2.284301804477293,
+      "reward_median": 2.284301804477293,
+      "reward_min": 1.9984858222654875,
+      "solver": "continuous_relaxed",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 1.0,
+      "instances": 2,
+      "reward_max": 2.570117786689098,
+      "reward_mean": 2.5689237751860974,
+      "reward_median": 2.5689237751860974,
+      "reward_min": 2.567729763683097,
+      "solver": "algebraic_relaxed",
+      "timeout_rate": 0.0
+    },
+    {
+      "compile_failure_rate": 0.0,
+      "crash_rate": 0.0,
+      "feasible_rate": 0.0,
+      "instances": 2,
+      "reward_max": 1.9943991580668323,
+      "reward_mean": 1.994254681192253,
+      "reward_median": 1.994254681192253,
+      "reward_min": 1.9941102043176737,
+      "solver": "parallel_tempering",
+      "timeout_rate": 0.0
+    }
+  ],
+  "suite": "hard"
+}

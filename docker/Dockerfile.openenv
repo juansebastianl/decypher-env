@@ -1,0 +1,11 @@
+# OpenEnv (Meta PyTorch) service image.
+#   docker build -f docker/Dockerfile.base -t aes-solver-base .
+#   docker build -f docker/Dockerfile.openenv -t aes-solver-openenv .
+#   docker run --rm -p 8000:8000 aes-solver-openenv
+FROM aes-solver-base
+
+RUN pip install --no-cache-dir ".[openenv]"
+
+EXPOSE 8000
+# Serves the MCP/WebSocket app built by the OpenEnv adapter.
+CMD ["python", "-c", "from src.decoder.rl.adapters.openenv_env import create_app; import uvicorn; uvicorn.run(create_app(), host='0.0.0.0', port=8000)"]

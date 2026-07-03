@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=69", "wheel>=0.42", "cython>=3.0", "numpy>=1.26"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aes-xts-decoder"
+version = "0.1.0"
+description = "An RL environment for authoring AES-XTS solver plugins, with sandboxed on-demand C++ compilation and adapters to the major RL-environment frameworks."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+    "numpy>=1.26",
+    "cryptography>=42.0",
+]
+
+[project.optional-dependencies]
+# --- In-process frameworks -------------------------------------------------
+# Verifiers (PrimeIntellect) and OpenEnv require Python >= 3.11.
+verifiers = ["verifiers>=0.1", "datasets>=2.14"]
+# GEM (Axon-RL) ships on PyPI as `gem-llm` and imports as `gem`.
+gem = ["gem-llm>=0.1"]
+# SkyRL Gym (NovaSky) ships as `skyrl-gym` and imports as `skyrl_gym`.
+skyrl = ["skyrl-gym>=0.3"]
+
+# --- HTTP / server frameworks ----------------------------------------------
+# OpenEnv (Meta PyTorch / Hugging Face) core runtime; MCP + FastMCP.
+openenv = ["openenv-core>=0.3", "uvicorn>=0.30"]
+# Open Reward Standard. Package name per the RL-environments guide; if it is not
+# yet on PyPI, install it from its source repo (see docs/adapters/ors.md).
+ors = ["ors", "uvicorn>=0.30"]
+# NeMo Gym (NVIDIA) requires Python >= 3.12.
+nemo = ["nemo-gym>=0.2", "fastapi>=0.110", "uvicorn>=0.30", "pydantic>=2.0"]
+
+# --- Grouping extras -------------------------------------------------------
+inprocess = [
+    "aes-xts-decoder[verifiers]",
+    "aes-xts-decoder[gem]",
+    "aes-xts-decoder[skyrl]",
+]
+http = [
+    "aes-xts-decoder[openenv]",
+    "aes-xts-decoder[ors]",
+    "aes-xts-decoder[nemo]",
+]
+all = [
+    "aes-xts-decoder[inprocess]",
+    "aes-xts-decoder[http]",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "cython>=3.0",
+    "setuptools>=69",
+    "wheel>=0.42",
+]
+
+[project.urls]
+Documentation = "https://adithyask-rl-environments-guide.hf.space/"
+
+# Package discovery, the Cython `_bridge` extension and the on-demand-compiled
+# SDK/harness package_data stay in setup.py (imperative build config); this file
+# provides PEP 621 metadata + the per-framework extras. Fields owned by
+# [project] here (name, version, dependencies) are intentionally NOT repeated in
+# setup.py to avoid a "specified in both" build error.
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

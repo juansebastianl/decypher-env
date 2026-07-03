@@ -1,0 +1,40 @@
+# Convenience compose for the three HTTP/server adapters.
+#
+# Build the shared base first:
+#   docker build -f docker/Dockerfile.base -t aes-solver-base .
+# Then:
+#   docker compose -f docker/docker-compose.yml up openenv   # or ors / nemo
+#
+# bwrap needs unprivileged user namespaces. The security_opt below relaxes the
+# default seccomp profile enough to allow CLONE_NEWUSER; tighten it to a custom
+# profile in production instead of running privileged.
+services:
+  openenv:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.openenv
+    image: aes-solver-openenv
+    ports:
+      - "8000:8000"
+    security_opt:
+      - seccomp:unconfined
+
+  ors:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ors
+    image: aes-solver-ors
+    ports:
+      - "8001:8001"
+    security_opt:
+      - seccomp:unconfined
+
+  nemo:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.nemo
+    image: aes-solver-nemo
+    ports:
+      - "8002:8000"
+    security_opt:
+      - seccomp:unconfined

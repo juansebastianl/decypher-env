@@ -1,0 +1,11 @@
+# NeMo Gym (NVIDIA) service image. Requires Python >= 3.12 (base is 3.12).
+#   docker build -f docker/Dockerfile.base -t aes-solver-base .
+#   docker build -f docker/Dockerfile.nemo -t aes-solver-nemo .
+#   docker run --rm -p 8000:8000 aes-solver-nemo
+FROM aes-solver-base
+
+RUN pip install --no-cache-dir ".[nemo]"
+
+EXPOSE 8000
+# Serves the FastAPI app (POST /submit_solver, POST /verify).
+CMD ["python", "-c", "from src.decoder.rl.adapters.nemo_env import run_webserver; run_webserver(host='0.0.0.0', port=8000)"]

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel>=0.42", "cython>=3.0", "numpy>=1.26"]
+requires = ["setuptools>=69", "wheel>=0.42"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,7 +10,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
-    "numpy>=1.26",
     "cryptography>=42.0",
 ]
 
@@ -50,19 +49,25 @@ all = [
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.1",
-    "cython>=3.0",
-    "setuptools>=69",
-    "wheel>=0.42",
 ]
 
 [project.urls]
 Documentation = "https://adithyask-rl-environments-guide.hf.space/"
 
-# Package discovery, the Cython `_bridge` extension and the on-demand-compiled
-# SDK/harness package_data stay in setup.py (imperative build config); this file
-# provides PEP 621 metadata + the per-framework extras. Fields owned by
-# [project] here (name, version, dependencies) are intentionally NOT repeated in
-# setup.py to avoid a "specified in both" build error.
+[tool.setuptools.packages.find]
+include = ["src", "src.*"]
+
+# The RL environment compiles authored solvers on demand rather than shipping a
+# prebuilt extension: the solver SDK + compile-and-run harness sources must
+# travel with the package so src/decoder/rl/harness.py can build them at
+# runtime.
+[tool.setuptools.package-data]
+"src.decoder.rl" = [
+    "native/include/*.hpp",
+    "native/sdk/*.cpp",
+    "native/harness/*.hpp",
+    "native/harness/*.cpp",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -10,6 +10,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+src/decoder/rl/native/harness/_build/
 
 # Virtual environments
 .venv/
@@ -20,13 +21,3 @@ env/
 src/testing_setup/lorem_ipsum_aes_xts.bin
 src/testing_setup/lorem_ipsum_aes_xts.json
 src/testing_setup/lorem_ipsum_plaintext.txt
-src/testing_setup/sampler_runs/
-src/testing_setup/sampler_runs_smoke/
-src/testing_setup/fusion_runs/
-src/testing_setup/fusion_runs_smoke/
-src/testing_setup/fusion_runs_smoke_random/
-src/testing_setup/fusion_runs_logging_smoke/
-src/testing_setup/fusion_runs_parallel_smoke/
-src/testing_setup/fusion_runs_multiplier_smoke/
-src/testing_setup/fusion_runs_marginal_smoke/
-src/testing_setup/fusion_runs_cached_delta_smoke/

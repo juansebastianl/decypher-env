@@ -1,8 +1,8 @@
-// algebraic_relaxed: a port of the legacy algebraic/BP-guided engine.
+// algebraic_relaxed: a BP-seeded variant of the continuous-relaxed search.
 //
-// The legacy engine was a thin wrapper around the continuous-relaxed search: it
-// ran a cheap belief-propagation pass over the 64 key bytes and used the
-// resulting marginals to *seed* the starting keys, then handed off to the same
+// A thin layer over the continuous-relaxed search: it runs a cheap
+// belief-propagation pass over the 64 key bytes and uses the resulting
+// marginals to *seed* the starting keys, then hands off to the same
 // parallel-tempering + key-Gibbs search. The "BP" is coordinate-wise: for each
 // key byte it sweeps all 256 values, scores each by repairing the plaintext
 // (exact XTS decrypt) and measuring the ASCII energy, and forms a damped
@@ -33,8 +33,8 @@ constexpr double kKeyGibbsProb = 0.5;
 // Total exact key-Gibbs moves across the whole rollout (see continuous_relaxed).
 constexpr int kGibbsBudget = 96;
 
-// Belief-propagation seeding parameters (legacy defaults, iterations trimmed
-// since each iteration costs 256 repairs per key byte).
+// Belief-propagation seeding parameters (iterations kept low since each
+// iteration costs 256 repairs per key byte).
 constexpr int kBpIterations = 2;
 constexpr double kBpDamping = 0.35;
 

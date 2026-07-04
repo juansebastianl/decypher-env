@@ -151,15 +151,14 @@ src/decoder/
     curriculum.py        reduced-round ladder + coupling/penalty schedule + dual update
     harness.py           flatten circuit, build + run the C++ harness (bwrap sandbox)
     benchmark.py         smoke|public|hard suites + baselines + regression compare
+    benchmark_viz.py     render a benchmark report JSON as a standalone HTML page
     adapters/            one thin adapter per RL framework (verifiers/gem/skyrl/…)
     native/              the solver SDK (include/) + compile-and-run harness/
   circuit.py, xts_model.py, aes_primitives.py, ascii_constraints.py,
   encodings/, constraints.py   ← task builder (the AES-XTS constraint model)
-  legacy/              ← internals you can ignore: the old sampler CLIs and the
-                          native reference engines (see legacy/README).
 examples/              ← solver templates + strategy docs (start: examples/README.md)
 docker/                ← Dockerfile + compose scaffolds for the HTTP adapters
-benchmarks/baselines/  ← committed benchmark baselines (regression targets)
+benchmarks/baselines/  ← committed benchmark baselines (regression targets + HTML reports)
 docs/                  ← ARCHITECTURE, adapters/, train-your-first-model,
                           benchmark, security-sandbox, troubleshooting
 tests/
@@ -168,10 +167,8 @@ tests/
   test_harness_hardening.py      malformed-payload + sandbox enforcement
   test_adapters.py       per-framework adapter smoke tests
   test_benchmark.py      benchmark regression
-  test_decoder.py        legacy engine + task-builder tests
+  test_decoder.py        task-builder tests (AES primitives, circuit IR, XTS model)
 ```
 
-As an RL developer you live in **`src/decoder/rl/`** and **`examples/`**. The
-`legacy/` tree and `docs/internals/` exist for depth and reference; you don't
-need them to train a strong policy. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-for the three-layer picture.
+As an RL developer you live in **`src/decoder/rl/`** and **`examples/`**. See
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the two-layer picture.

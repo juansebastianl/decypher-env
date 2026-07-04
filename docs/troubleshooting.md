@@ -10,9 +10,6 @@
 - **`ccache` errors during `pip install -e .`** — the editable build honours
   `CXX`; if `ccache` isn't configured (no writable `CCACHE_DIR`), build with
   `CC=gcc CXX=g++ pip install -e . --no-build-isolation`.
-- **Cython errors** — ensure `cython>=3.0` and `numpy>=1.26` are installed
-  (`pip install -r requirements-dev.txt`). Only the *legacy* `_bridge`
-  extension needs Cython; the RL environment compiles solvers on demand.
 
 ## Sandbox (`bwrap`)
 

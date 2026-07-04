@@ -1,7 +1,7 @@
 # Architecture
 
-The repository is three layers. Only the top one matters if you are training a
-model; the lower two are the substrate it stands on and can be treated as a
+The repository is two layers. Only the top one matters if you are training a
+model; the lower one is the substrate it stands on and can be treated as a
 black box.
 
 ```
@@ -14,6 +14,8 @@ black box.
 │   • harness.py      circuit → wire format → build & run C++ harness   │
 │   • native/         solver SDK (the ISolver contract) + the harness    │
 │   examples/         solver templates + a menu of strategies            │
+│                     (baseline, Metropolis, parallel tempering,         │
+│                      continuous relaxation, algebraic/BP-guided)       │
 └───────────────────────────────┬──────────────────────────────────────┘
                                  │ builds tasks from
 ┌───────────────────────────────▼──────────────────────────────────────┐
@@ -23,14 +25,6 @@ black box.
 │   The AES-XTS constraint model: a flat circuit IR of XOR/S-box/Mix/    │
 │   key-expansion ops with per-round consistency (DEFINE8) constraints,  │
 │   and reduced-round targets. Shared, stable, framework-agnostic.       │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                 │ reference implementations of "a solver"
-┌───────────────────────────────▼──────────────────────────────────────┐
-│ Layer 3 — LEGACY / REFERENCE      src/decoder/legacy/                  │
-│   The original hand-written solver research: sampler CLIs, the Python  │
-│   engine, and the native parallel-tempering / continuous / algebraic   │
-│   engines (the _bridge Cython extension). Kept working; doubles as     │
-│   documented reference strategies. Not required by Layers 1–2.         │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,10 +69,3 @@ across stages (`penalty_schedule`) and, between stages, applies the dual update
 per-class residual mass the best assignment left, so multipliers grow on
 constraints that stayed violated. The per-round staircase reward is read off the
 same residuals.
-
-## Design deep-dive
-
-`docs/internals/decoder_explained.html` is the original long-form design of the
-constraint model, the parallel-tempering engine, the continuous relaxation and
-the diagnostics. It documents Layers 2–3 in depth; it is background, not
-required reading for using the environment.

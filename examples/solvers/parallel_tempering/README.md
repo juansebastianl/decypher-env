@@ -1,10 +1,9 @@
 # parallel_tempering
 
-A working `ISolver` plugin ([`solver.cpp`](solver.cpp)) that ports the legacy
-native parallel-tempering engine to the plugin SDK. Parallel tempering
-(replica-exchange MCMC) is the classic way to search a rugged energy landscape
-without getting stuck, and it is the scaffold the other two ported strategies
-build on.
+A working `ISolver` plugin ([`solver.cpp`](solver.cpp)) implementing parallel
+tempering against the plugin SDK. Parallel tempering (replica-exchange MCMC) is
+the classic way to search a rugged energy landscape without getting stuck, and
+it is the scaffold the other two reference strategies build on.
 
 ## Strategy
 
@@ -12,7 +11,7 @@ build on.
   (`kColdTemperature`..`kHotTemperature`). Hot replicas roam; cold replicas
   refine.
 - Each replica does **augmented-Lagrangian Metropolis** using
-  `SdkCircuit::Energy`, with the legacy proposal mix: 65% wire bit-flip, 25%
+  `SdkCircuit::Energy`, with a proposal mix of 65% wire bit-flip, 25%
   ASCII plaintext resample, otherwise a key move (half 4-byte word swap, half
   single-bit flip), plus an occasional exact XTS plaintext repair
   (`RepairPlaintext`).
@@ -44,4 +43,4 @@ Pure bit-flip Metropolis has no exact key knowledge, so from a random start it
 not by itself invert even a one-round instance. That is exactly the gap
 `continuous_relaxed` and `algebraic_relaxed` close by adding exact
 key-conditional moves on top of this scaffold. See `tests/test_example_parity.py`
-for the capability parity checks.
+for the capability checks.

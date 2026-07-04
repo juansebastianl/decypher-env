@@ -1,8 +1,8 @@
-// continuous_relaxed: a port of the legacy continuous-relaxed engine.
+// continuous_relaxed: parallel tempering + exact key-conditional Gibbs moves.
 //
-// Despite the name, the legacy engine never carried persistent 256-way byte
-// distributions or analytic gradients -- its search state was always discrete
-// bytes. What made it "relaxed" and strong was the combination of (a) parallel
+// Despite the name, this solver carries no persistent 256-way byte
+// distributions or analytic gradients -- its search state is always discrete
+// bytes. What makes it "relaxed" and strong is the combination of (a) parallel
 // tempering over an augmented-Lagrangian energy and (b) *exact key-conditional
 // Gibbs moves*: pick a key byte, sweep all 256 values, and for each value repair
 // the plaintext exactly by decrypting the target ciphertext under the candidate

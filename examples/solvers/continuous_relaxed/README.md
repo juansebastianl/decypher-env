@@ -1,16 +1,14 @@
 # continuous_relaxed
 
-A working `ISolver` plugin ([`solver.cpp`](solver.cpp)) that ports the legacy
-"continuous relaxed" engine to the plugin SDK.
+A working `ISolver` plugin ([`solver.cpp`](solver.cpp)) implementing the
+"continuous relaxed" strategy against the plugin SDK.
 
 ## What "continuous relaxed" really means here
 
-Despite the name, the legacy engine never carried persistent 256-way byte
-distributions or analytic gradients — its state was always **discrete bytes**.
-What made it strong was combining parallel tempering with **exact
-key-conditional Gibbs moves**. This port keeps that essential behaviour and
-drops the incidental bookkeeping (population annealing, marginal diagnostics,
-profiling).
+Despite the name, this solver carries no persistent 256-way byte distributions
+or analytic gradients — its state is always **discrete bytes**. What makes it
+strong is combining parallel tempering with **exact key-conditional Gibbs
+moves**.
 
 ## Strategy
 

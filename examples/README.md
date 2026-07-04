@@ -9,8 +9,8 @@ derived from the augmented-Lagrangian energy of the constraint system.
 Every solver in this folder is a **real, compilable plugin** (`solver.cpp`) that
 the harness builds and runs exactly like a model's output — they are
 documentation by example, not benchmarks. `parallel_tempering`,
-`continuous_relaxed` and `algebraic_relaxed` are ports of the legacy native
-engines to the plugin interface, with capability-parity tests in
+`continuous_relaxed` and `algebraic_relaxed` implement the classic reference
+search strategies against the plugin interface, with capability tests in
 `tests/test_example_parity.py`. None of them is tuned to invert full AES; that is
 the hard open problem the environment is built to train against.
 
@@ -132,6 +132,7 @@ c++ -std=c++17 -O2 -fPIC -shared -fopenmp \
     -o /tmp/baseline.so
 ```
 
-The environment integrates with GRPO trainers via the `verifiers` shape
-(`SolverAuthoringEnv.to_verifiers_env()`) and also offers a dependency-free
-gym-like `reset()/step()` loop.
+The environment integrates with GRPO trainers through adapters to the major
+RL-environment frameworks (Verifiers, GEM, SkyRL Gym, OpenEnv, ORS, NeMo Gym) —
+see [`docs/adapters/`](../docs/adapters/) — or dependency-free via
+`SolverAuthoringEnv.score_batch(...)`.

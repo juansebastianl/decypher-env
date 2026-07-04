@@ -1,10 +1,10 @@
-// parallel_tempering: a port of the legacy native parallel-tempering engine to
-// the ISolver plugin interface.
+// parallel_tempering: replica-exchange MCMC against the ISolver plugin
+// interface.
 //
 // It runs a population of replicas on a geometric temperature ladder. Each
-// replica does augmented-Lagrangian Metropolis over the same four proposal
-// families the legacy engine used (wire bit-flip, ASCII plaintext resample,
-// key word-swap, key bit-flip), plus an occasional exact XTS plaintext repair.
+// replica does augmented-Lagrangian Metropolis over four proposal families
+// (wire bit-flip, ASCII plaintext resample, key word-swap, key bit-flip),
+// plus an occasional exact XTS plaintext repair.
 // After every sweep, adjacent replicas attempt a replica-exchange swap so hot
 // replicas (which explore) can feed good states down to cold replicas (which
 // refine). Feasible states are harvested and de-duplicated by key.
@@ -24,8 +24,8 @@ using namespace aes_xts_decoder::sdk;
 
 namespace {
 
-// Population size and temperature bounds mirror the legacy defaults, scaled down
-// so a single rollout stays inside the harness wall-clock budget.
+// Population size and temperature bounds are scaled down so a single rollout
+// stays inside the harness wall-clock budget.
 constexpr std::size_t kReplicas = 8;
 constexpr double kColdTemperature = 0.5;
 constexpr double kHotTemperature = 8.0;
@@ -109,7 +109,7 @@ class ParallelTemperingSolver : public ISolver {
     }
   }
 
-  // The legacy proposal mix: 65% wire bit-flip, 25% ASCII plaintext resample,
+  // The proposal mix: 65% wire bit-flip, 25% ASCII plaintext resample,
   // otherwise a key move (half word-swap, half single-bit flip). Returns true if
   // the plaintext or keys changed (so wires must be re-derived); false for a
   // wire bit-flip, which is itself the move and must not be re-derived away.

@@ -44,6 +44,27 @@ Baselines are committed under `benchmarks/baselines/<suite>.json`. The
 `--compare-baseline` mode flags any solver whose `reward_mean` regressed beyond
 `--tolerance` (default `0.05`).
 
+## Visualizing a report
+
+`src/decoder/rl/benchmark_viz.py` renders any benchmark report JSON into a
+self-contained HTML page (inline CSS + SVG, no external dependencies): reward
+distribution per solver (mean bar, min–max whisker, median tick), an outcome
+table with feasibility / compile-failure / timeout / crash rate bars, the
+`pass@k` curve, and the raw JSON.
+
+```bash
+# Render one report (writes report.html next to it, or use -o):
+python -m src.decoder.rl.benchmark --suite public --json > report.json
+python -m src.decoder.rl.benchmark_viz report.json
+
+# Re-render the committed baselines (benchmarks/baselines/<suite>.html):
+python -m src.decoder.rl.benchmark_viz --all-baselines
+```
+
+A pre-rendered HTML page is committed next to each baseline JSON under
+`benchmarks/baselines/`; regenerate them with `--all-baselines` whenever you
+rewrite a baseline.
+
 ## Regression test
 
 `tests/test_benchmark.py` runs the `smoke` suite and asserts the bundled solvers

@@ -1,8 +1,4 @@
-"""Constraint classification shared by the task builder and the RL environment.
-
-This lives outside ``backends/`` so the environment (``rl/``) can classify
-constraints without importing any of the legacy solver machinery.
-"""
+"""Constraint classification shared by the task builder and the RL environment."""
 
 from __future__ import annotations
 

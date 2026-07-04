@@ -6,7 +6,7 @@
 // with a single translation unit plus solver_sdk.cpp.
 //
 // Everything lives in namespace aes_xts_decoder::sdk so it never collides with
-// the legacy in-tree engines that live in namespace aes_xts_decoder.
+// symbols an authored solver may define itself.
 
 #pragma once
 

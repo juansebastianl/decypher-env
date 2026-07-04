@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Benchmark — hard</title>
+<style>
+:root {
+  --ink: #24292f; --muted: #57606a; --border: #d0d7de; --bg: #ffffff;
+  --panel: #f6f8fa; --accent: #4c78a8; --good: #54a24b; --bad: #e45756;
+}
+* { box-sizing: border-box; }
+body { margin: 0 auto; max-width: 880px; padding: 24px 16px 64px;
+       font: 15px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+       color: var(--ink); background: var(--bg); }
+h1 { font-size: 24px; margin: 0 0 4px; }
+h2 { font-size: 18px; margin: 32px 0 8px; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--border);
+         border-radius: 8px; padding: 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; }
+td.num { font-variant-numeric: tabular-nums; text-align: right; }
+.rate-cell { min-width: 130px; }
+.rate-bar { display: inline-block; height: 10px; border-radius: 2px;
+            background: var(--accent); vertical-align: middle; margin-right: 6px; }
+.rate-bar.bad { background: var(--bad); }
+.rate-bar.good { background: var(--good); }
+.legend { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+.legend span { display: inline-block; margin-right: 16px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+          margin-right: 4px; vertical-align: baseline; }
+details { margin-top: 32px; }
+summary { cursor: pointer; color: var(--muted); }
+pre { background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; overflow-x: auto; font-size: 12px; }
+svg text { font: 12px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+           fill: var(--ink); }
+svg .tick text { fill: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Benchmark report — <code>hard</code> suite</h1>
+<div class="meta">2 instance(s) &middot; 5 bundled solver(s) &middot; generated 2026-07-04 05:54 UTC &middot; source: <code>hard.json</code></div>
+<h2>Reward per solver</h2>
+<div class="panel">
+<svg viewBox="0 0 860 206" role="img" aria-label="Reward per solver"><g class="tick"><line x1="203.2" y1="22" x2="203.2" y2="198" stroke="#d0d7de" stroke-width="1"/><text x="203.2" y="16" text-anchor="middle">0</text></g><g class="tick"><line x1="418.6" y1="22" x2="418.6" y2="198" stroke="#d0d7de" stroke-width="1"/><text x="418.6" y="16" text-anchor="middle">1</text></g><g class="tick"><line x1="634.0" y1="22" x2="634.0" y2="198" stroke="#d0d7de" stroke-width="1"/><text x="634.0" y="16" text-anchor="middle">2</text></g><line x1="203.2" y1="22" x2="203.2" y2="198" stroke="#57606a" stroke-width="1"/><text x="160" y="49.0" text-anchor="end">baseline</text><rect x="203.2" y="36.0" width="412.5" height="18" rx="2" fill="#4c78a8" fill-opacity="0.85"/><line x1="614.8" y1="45.0" x2="616.6" y2="45.0" stroke="#24292f" stroke-width="1.5"/><line x1="614.8" y1="40.0" x2="614.8" y2="50.0" stroke="#24292f" stroke-width="1.5"/><line x1="616.6" y1="40.0" x2="616.6" y2="50.0" stroke="#24292f" stroke-width="1.5"/><line x1="615.7" y1="36.0" x2="615.7" y2="54.0" stroke="#ffffff" stroke-width="2"/><text x="624.6" y="49.0">+1.915</text><text x="160" y="83.0" text-anchor="end">random_metropolis</text><rect x="203.2" y="70.0" width="429.3" height="18" rx="2" fill="#f58518" fill-opacity="0.85"/><line x1="632.3" y1="79.0" x2="632.6" y2="79.0" stroke="#24292f" stroke-width="1.5"/><line x1="632.3" y1="74.0" x2="632.3" y2="84.0" stroke="#24292f" stroke-width="1.5"/><line x1="632.6" y1="74.0" x2="632.6" y2="84.0" stroke="#24292f" stroke-width="1.5"/><line x1="632.5" y1="70.0" x2="632.5" y2="88.0" stroke="#ffffff" stroke-width="2"/><text x="640.6" y="83.0">+1.993</text><text x="160" y="117.0" text-anchor="end">continuous_relaxed</text><rect x="203.2" y="104.0" width="492.0" height="18" rx="2" fill="#54a24b" fill-opacity="0.85"/><line x1="633.7" y1="113.0" x2="756.8" y2="113.0" stroke="#24292f" stroke-width="1.5"/><line x1="633.7" y1="108.0" x2="633.7" y2="118.0" stroke="#24292f" stroke-width="1.5"/><line x1="756.8" y1="108.0" x2="756.8" y2="118.0" stroke="#24292f" stroke-width="1.5"/><line x1="695.2" y1="104.0" x2="695.2" y2="122.0" stroke="#ffffff" stroke-width="2"/><text x="764.8" y="117.0">+2.284</text><text x="160" y="151.0" text-anchor="end">algebraic_relaxed</text><rect x="203.2" y="138.0" width="553.3" height="18" rx="2" fill="#b279a2" fill-opacity="0.85"/><line x1="756.3" y1="147.0" x2="756.8" y2="147.0" stroke="#24292f" stroke-width="1.5"/><line x1="756.3" y1="142.0" x2="756.3" y2="152.0" stroke="#24292f" stroke-width="1.5"/><line x1="756.8" y1="142.0" x2="756.8" y2="152.0" stroke="#24292f" stroke-width="1.5"/><line x1="756.5" y1="138.0" x2="756.5" y2="156.0" stroke="#ffffff" stroke-width="2"/><text x="764.8" y="151.0">+2.569</text><text x="160" y="185.0" text-anchor="end">parallel_tempering</text><rect x="203.2" y="172.0" width="429.5" height="18" rx="2" fill="#e45756" fill-opacity="0.85"/><line x1="632.7" y1="181.0" x2="632.8" y2="181.0" stroke="#24292f" stroke-width="1.5"/><line x1="632.7" y1="176.0" x2="632.7" y2="186.0" stroke="#24292f" stroke-width="1.5"/><line x1="632.8" y1="176.0" x2="632.8" y2="186.0" stroke="#24292f" stroke-width="1.5"/><line x1="632.8" y1="172.0" x2="632.8" y2="190.0" stroke="#ffffff" stroke-width="2"/><text x="640.8" y="185.0">+1.994</text></svg>
+<p class="legend"><span><span class="swatch" style="background:#4c78a8"></span>bar = mean reward</span><span>whisker = min&ndash;max</span><span>white tick = median</span></p>
+</div>
+<h2>Outcome rates</h2>
+<div class="panel">
+<table><thead><tr><th>solver</th><th>mean</th><th>median</th><th>min</th><th>max</th><th>feasible</th><th>compile fail</th><th>timeout</th><th>crash</th></tr></thead><tbody><tr><td>baseline</td><td class="num">+1.9152</td><td class="num">+1.9152</td><td class="num">+1.9109</td><td class="num">+1.9194</td><td class="rate-cell"><span class="rate-bar good" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td></tr><tr><td>random_metropolis</td><td class="num">+1.9931</td><td class="num">+1.9931</td><td class="num">+1.9924</td><td class="num">+1.9937</td><td class="rate-cell"><span class="rate-bar good" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td></tr><tr><td>continuous_relaxed</td><td class="num">+2.2843</td><td class="num">+2.2843</td><td class="num">+1.9985</td><td class="num">+2.5701</td><td class="rate-cell"><span class="rate-bar good" style="width:45px"></span>50%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td></tr><tr><td>algebraic_relaxed</td><td class="num">+2.5689</td><td class="num">+2.5689</td><td class="num">+2.5677</td><td class="num">+2.5701</td><td class="rate-cell"><span class="rate-bar good" style="width:90px"></span>100%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td></tr><tr><td>parallel_tempering</td><td class="num">+1.9943</td><td class="num">+1.9943</td><td class="num">+1.9941</td><td class="num">+1.9944</td><td class="rate-cell"><span class="rate-bar good" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td><td class="rate-cell"><span class="rate-bar bad" style="width:0px"></span>0%</td></tr></tbody></table>
+</div>
+<h2>pass@k <span style='font-weight:400;color:var(--muted)'>(bundled solvers as k samples per instance)</span></h2>
+<div class="panel">
+<svg viewBox="0 0 448 202" role="img" aria-label="pass@k"><g class="tick"><line x1="46" y1="172.0" x2="440" y2="172.0" stroke="#d0d7de" stroke-width="1"/><text x="40" y="176.0" text-anchor="end">0</text></g><g class="tick"><line x1="46" y1="132.0" x2="440" y2="132.0" stroke="#d0d7de" stroke-width="1"/><text x="40" y="136.0" text-anchor="end">0.25</text></g><g class="tick"><line x1="46" y1="92.0" x2="440" y2="92.0" stroke="#d0d7de" stroke-width="1"/><text x="40" y="96.0" text-anchor="end">0.5</text></g><g class="tick"><line x1="46" y1="52.0" x2="440" y2="52.0" stroke="#d0d7de" stroke-width="1"/><text x="40" y="56.0" text-anchor="end">0.75</text></g><g class="tick"><line x1="46" y1="12.0" x2="440" y2="12.0" stroke="#d0d7de" stroke-width="1"/><text x="40" y="16.0" text-anchor="end">1</text></g><rect x="57.0" y="124.0" width="56" height="48.0" rx="2" fill="#4c78a8"/><text x="85.0" y="119.0" text-anchor="middle">0.30</text><text x="85.0" y="192" text-anchor="middle">pass@1</text><rect x="135.0" y="84.0" width="56" height="88.0" rx="2" fill="#4c78a8"/><text x="163.0" y="79.0" text-anchor="middle">0.55</text><text x="163.0" y="192" text-anchor="middle">pass@2</text><rect x="213.0" y="52.0" width="56" height="120.0" rx="2" fill="#4c78a8"/><text x="241.0" y="47.0" text-anchor="middle">0.75</text><text x="241.0" y="192" text-anchor="middle">pass@3</text><rect x="291.0" y="28.0" width="56" height="144.0" rx="2" fill="#4c78a8"/><text x="319.0" y="23.0" text-anchor="middle">0.90</text><text x="319.0" y="192" text-anchor="middle">pass@4</text><rect x="369.0" y="12.0" width="56" height="160.0" rx="2" fill="#4c78a8"/><text x="397.0" y="7.0" text-anchor="middle">1.00</text><text x="397.0" y="192" text-anchor="middle">pass@5</text></svg>
+</div>
+<details><summary>Raw report JSON</summary>
+<pre>{
+  &quot;num_instances&quot;: 2,
+  &quot;pass_at_k&quot;: {
+    &quot;pass@1&quot;: 0.3,
+    &quot;pass@2&quot;: 0.55,
+    &quot;pass@3&quot;: 0.75,
+    &quot;pass@4&quot;: 0.9,
+    &quot;pass@5&quot;: 1.0
+  },
+  &quot;solvers&quot;: [
+    {
+      &quot;compile_failure_rate&quot;: 0.0,
+      &quot;crash_rate&quot;: 0.0,
+      &quot;feasible_rate&quot;: 0.0,
+      &quot;instances&quot;: 2,
+      &quot;reward_max&quot;: 1.9194217905753426,
+      &quot;reward_mean&quot;: 1.9151521598778105,
+      &quot;reward_median&quot;: 1.9151521598778105,
+      &quot;reward_min&quot;: 1.9108825291802787,
+      &quot;solver&quot;: &quot;baseline&quot;,
+      &quot;timeout_rate&quot;: 0.0
+    },
+    {
+      &quot;compile_failure_rate&quot;: 0.0,
+      &quot;crash_rate&quot;: 0.0,
+      &quot;feasible_rate&quot;: 0.0,
+      &quot;instances&quot;: 2,
+      &quot;reward_max&quot;: 1.993739337030219,
+      &quot;reward_mean&quot;: 1.9930561127063764,
+      &quot;reward_median&quot;: 1.9930561127063764,
+      &quot;reward_min&quot;: 1.992372888382534,
+      &quot;solver&quot;: &quot;random_metropolis&quot;,
+      &quot;timeout_rate&quot;: 0.0
+    },
+    {
+      &quot;compile_failure_rate&quot;: 0.0,
+      &quot;crash_rate&quot;: 0.0,
+      &quot;feasible_rate&quot;: 0.5,
+      &quot;instances&quot;: 2,
+      &quot;reward_max&quot;: 2.570117786689098,
+      &quot;reward_mean&quot;: 2.284301804477293,
+      &quot;reward_median&quot;: 2.284301804477293,
+      &quot;reward_min&quot;: 1.9984858222654875,
+      &quot;solver&quot;: &quot;continuous_relaxed&quot;,
+      &quot;timeout_rate&quot;: 0.0
+    },
+    {
+      &quot;compile_failure_rate&quot;: 0.0,
+      &quot;crash_rate&quot;: 0.0,
+      &quot;feasible_rate&quot;: 1.0,
+      &quot;instances&quot;: 2,
+      &quot;reward_max&quot;: 2.570117786689098,
+      &quot;reward_mean&quot;: 2.5689237751860974,
+      &quot;reward_median&quot;: 2.5689237751860974,
+      &quot;reward_min&quot;: 2.567729763683097,
+      &quot;solver&quot;: &quot;algebraic_relaxed&quot;,
+      &quot;timeout_rate&quot;: 0.0
+    },
+    {
+      &quot;compile_failure_rate&quot;: 0.0,
+      &quot;crash_rate&quot;: 0.0,
+      &quot;feasible_rate&quot;: 0.0,
+      &quot;instances&quot;: 2,
+      &quot;reward_max&quot;: 1.9943991580668323,
+      &quot;reward_mean&quot;: 1.994254681192253,
+      &quot;reward_median&quot;: 1.994254681192253,
+      &quot;reward_min&quot;: 1.9941102043176737,
+      &quot;solver&quot;: &quot;parallel_tempering&quot;,
+      &quot;timeout_rate&quot;: 0.0
+    }
+  ],
+  &quot;suite&quot;: &quot;hard&quot;
+}</pre>
+</details>
+</body>
+</html>

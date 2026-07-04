@@ -1,17 +1,17 @@
 # algebraic_relaxed
 
-A working `ISolver` plugin ([`solver.cpp`](solver.cpp)) that ports the legacy
-algebraic / belief-propagation-guided engine to the plugin SDK.
+A working `ISolver` plugin ([`solver.cpp`](solver.cpp)) implementing an
+algebraic / belief-propagation-guided strategy against the plugin SDK.
 
-## What the legacy engine actually did
+## What "algebraic" means here
 
-The legacy "algebraic" engine was a thin wrapper around the continuous-relaxed
-search. Its "belief propagation" was **not** a factor graph over the circuit; it
-was coordinate-wise belief updates over the **64 key bytes**: for each key byte,
+The "algebraic" part is a thin layer over the continuous-relaxed search. Its
+"belief propagation" is **not** a factor graph over the circuit; it is
+coordinate-wise belief updates over the **64 key bytes**: for each key byte,
 sweep all 256 values, score each by repairing the plaintext (exact XTS decrypt)
 and measuring the ASCII penalty, and form a damped-softmax marginal. Those
-marginals were used **once**, to seed the starting key, before handing off to
-the ordinary search. This port reproduces that behaviour.
+marginals are used **once**, to seed the starting key, before handing off to
+the ordinary search.
 
 ## Strategy
 
@@ -44,5 +44,4 @@ step inside the constructor, before the replicas are initialised.
 A "true" algebraic solver — a factor graph with S-box/MixColumns/XOR factors and
 real sum-product or max-product message passing, lifting the S-box to GF(2⁸)
 constraints — is a legitimate strategy the interface supports, but it is **not**
-what the legacy engine implemented and is not what this port does. It is left as
-an exercise.
+what this solver does. It is left as an exercise.

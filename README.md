@@ -9,7 +9,7 @@ trainers unchanged via adapters to the major RL-environment frameworks
 
 If you train models and want to make yours strong at this task, you only need
 three things: **the task**, **the contract your model writes to**, and **the
-reward**. They are below, then a 60-second quickstart.
+reward**. They are below, then a 60-second quickstart. (Here is a blog post motivating this repo more)[https://www.juanslozano.com/blog/ai-aes]
 
 ---
 
